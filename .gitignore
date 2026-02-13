@@ -1,2 +1,4 @@
 .env
 ctexi_env/
+structure_project
+__pycache__
