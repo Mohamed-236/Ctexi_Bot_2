@@ -2,3 +2,4 @@
 ctexi_env/
 structure_project
 __pycache__
+.gitignore
