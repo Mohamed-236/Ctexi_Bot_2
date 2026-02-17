@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask     #
 from config import Config
 from routes.chatbot_routes import chatbot_bp
 
@@ -8,5 +8,6 @@ app.config.from_object(Config)
 app.register_blueprint(chatbot_bp)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  
     app.run(debug=True)
+

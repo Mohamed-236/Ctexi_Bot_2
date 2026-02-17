@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription | Ctexi Bot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='/auth.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>Inscription</h2>
+
+        <form method="POST" action="/register">
+            <div class="input-group">
+                <label>Nom complet</label>
+                <input type="text" name="fullname" required>
+            </div>
+
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" name="email" required>
+            </div>
+
+            <div class="input-group">
+                <label>Mot de passe</label>
+                <input type="password" name="password" required>
+            </div>
+
+            <button type="submit">S'inscrire</button>
+        </form>
+
+        <p class="switch">
+            Déjà inscrit ? <a href="{{url_for('chatbot.login')}}">Se connecter</a>
+        </p>
+    </div>
+</div>
+
+</body>
+</html>
