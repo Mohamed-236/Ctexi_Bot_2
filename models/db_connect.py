@@ -1,4 +1,5 @@
 import psycopg2             # Pour se connecter a psgsl
+import psycopg2.extras
 from config import Config   # importer la classe config pour acceder  a la configuration de la bd
 from psycopg2 import OperationalError
 

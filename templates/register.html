@@ -4,6 +4,30 @@
     <meta charset="UTF-8">
     <title>Inscription | Ctexi Bot</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='/auth.css') }}">
+    <style>
+        /* Formulaire en grille 2 colonnes */
+        form.form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* deux colonnes égales */
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Pour les champs qui doivent prendre toute la largeur */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        button.full-width {
+            grid-column: 1 / -1;
+            padding: 10px;
+            font-size: 1rem;
+        }
+    </style>
 </head>
 <body>
 
@@ -11,27 +35,41 @@
     <div class="card">
         <h2>Inscription</h2>
 
-        <form method="POST" action="/register">
+        <form method="POST" action="{{url_for('chatbot.register')}}" class="form-grid">
+            <!-- Ligne 1 : Nom et Prénom -->
             <div class="input-group">
-                <label>Nom complet</label>
-                <input type="text" name="fullname" required>
+                <label>Nom</label>
+                <input type="text" name="nom" required>
             </div>
 
+            <div class="input-group">
+                <label>Prénom</label>
+                <input type="text" name="prenom" required>
+            </div>
+
+            <!-- Ligne 2 : Email et Téléphone -->
             <div class="input-group">
                 <label>Email</label>
                 <input type="email" name="email" required>
             </div>
 
             <div class="input-group">
-                <label>Mot de passe</label>
-                <input type="password" name="password" required>
+                <label>Téléphone</label>
+                <input type="tel" name="telephone" required>
             </div>
 
-            <button type="submit">S'inscrire</button>
+            <!-- Ligne 3 : Mot de passe (pleine largeur) -->
+            <div class="input-group full-width">
+                <label>Mot de passe</label>
+                <input type="password" name="mdp" required>
+            </div>
+
+            <!-- Bouton (pleine largeur) -->
+            <button type="submit" class="full-width">S'inscrire</button>
         </form>
 
         <p class="switch">
-            Déjà inscrit ? <a href="{{url_for('chatbot.login')}}">Se connecter</a>
+            Déjà inscrit ? <a href="{{ url_for('chatbot.login') }}">Se connecter</a>
         </p>
     </div>
 </div>

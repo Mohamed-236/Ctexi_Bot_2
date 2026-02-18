@@ -1,4 +1,5 @@
--- Active: 1771246225510@@127.0.0.1@5433@ctexi_db
+-- database: :memory:
+-- Active: 1771410395791@@127.0.0.1@5433@ctexi_db@chatbot791@@127.0.0.1@5433@ctexi_db527@@127.0.0.1@5433@ctexi_db510@@127.0.0.1@5433@ctexi_db
 
 -----------------------------------CREATION DES SCHEMA---------------------------------------------------
 
@@ -186,3 +187,163 @@ CREATE TABLE systems.notification(
     contenu TEXT NOT NULL,
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+-------------------------------Insertion des donnees dans les tables faq----------------------------------
+
+--FAQ
+INSERT INTO chatbot.faq (message_user, reponse_bot) VALUES
+
+('Comment fonctionne le service CTEXI Buy ?',
+'CTEXI Buy vous aide à acheter des produits en Chine. Vous nous fournissez les caractéristiques du produit, nous recherchons les fournisseurs fiables, achetons, vérifions la qualité, conditionnons et expédions le produit vers vous.'),
+
+('Quels sont les avantages de CTEXI Buy ?',
+'Les avantages incluent la sécurité, notre expertise en Chine, la réduction des risques liés à l''achat et l''assurance de conformité avec vos demandes.'),
+
+('Comment suivre le processus de mon achat ?',
+'Vous pouvez suivre chaque étape : recherche produit, sourcing, achat, vérification qualité, conditionnement et expédition. Nous vous tenons informé à chaque étape.'),
+
+('Comment suivre mon colis ?',
+'Connectez-vous avec votre numéro de téléphone. Tous les colis enregistrés sous ce numéro apparaissent avec leur statut actuel, mode de transport et dernière mise à jour.'),
+
+('Que signifie le statut "En transit" ?',
+'Cela signifie que votre colis a quitté l''entrepôt et est en route vers le Burkina Faso.'),
+
+('Que faire si mon code de colis est invalide ?',
+'Vérifiez le code et assurez-vous qu''il correspond à un colis enregistré. En cas de problème, contactez notre service client via WhatsApp ou mail.'),
+
+('Quel est le taux de change du jour ?',
+'Le taux indicatif du jour est affiché dans l''application CTEXI Pay. Exemple : 1 RMB = 85 FCFA.'),
+
+('Comment calculer le montant à payer ?',
+'Entrez le montant en RMB dans la simulation. L''application calcule automatiquement le total à payer en FCFA selon le taux du jour.'),
+
+('Comment effectuer un paiement ?',
+'Cliquez sur "Valider et contacter CTEXI Pay" pour envoyer un message WhatsApp pré-rempli avec vos informations de paiement.'),
+
+('Comment obtenir un visa pour la Chine ?',
+'CTEXI Travel vous guide dans l''obtention du visa chinois. Nous fournissons la liste des documents requis, les délais et vous aidons à remplir votre demande.'),
+
+('Puis-je réserver un billet d''avion ou un hôtel via CTEXI Travel ?',
+'Oui, le service permet la réservation de billets d''avion et d''hôtels en Chine. Vous pouvez contacter directement un agent CTEXI pour assistance.'),
+
+('Quels types de formations propose CTEXI Académie ?',
+'CTEXI Académie propose des formations sur les achats en ligne en Chine, l''import-export, le marketing digital et du coaching.'),
+
+('Comment m''inscrire à une formation ?',
+'Cliquez sur "S''inscrire / Demander infos" et contactez-nous via WhatsApp, email ou formulaire pour réserver votre place.'),
+
+('Comment contacter CTEXI ?',
+'Vous pouvez nous contacter via WhatsApp, email ou téléphone depuis l''application.'),
+
+('Quels services propose CTEXI ?',
+'CTEXI propose Buy (achat en Chine), Cargo (expédition), Pay (transfert d''argent), Travel (voyage) et Académie (formation et coaching).'),
+
+('Combien de temps prend une commande via CTEXI Buy ?',
+'Le délai dépend du fournisseur et du mode de transport choisi. En moyenne : 3 à 7 jours pour l''achat et vérification, puis 7 à 45 jours pour la livraison selon transport aérien ou maritime.'),
+
+('Puis-je demander une vérification qualité avant expédition ?',
+'Oui, nous effectuons un contrôle qualité avant l''expédition afin de vérifier la conformité des produits avec votre commande.'),
+
+('Que faire si le produit reçu n''est pas conforme ?',
+'Contactez immédiatement notre service client avec photos et description du problème. Nous analyserons la situation avec le fournisseur.'),
+
+('Puis-je annuler une commande ?',
+'L''annulation est possible uniquement si la commande n''a pas encore été payée au fournisseur.'),
+
+('Proposez-vous une assurance marchandise ?',
+'Oui, une assurance transport peut être ajoutée pour couvrir les pertes ou dommages pendant l''expédition.'),
+
+('Quels sont les délais de livraison en fret aérien ?',
+'Le fret aérien prend généralement entre 7 et 15 jours selon la destination.'),
+
+('Quels sont les délais de livraison en fret maritime ?',
+'Le fret maritime prend en moyenne entre 30 et 45 jours selon le port de départ.'),
+
+('Comment sont calculés les frais de transport ?',
+'Les frais sont calculés selon le poids volumétrique, le mode de transport et la destination finale.'),
+
+('Que signifie le statut "Arrivé au dépôt" ?',
+'Cela signifie que votre colis est arrivé dans notre entrepôt local et est prêt pour retrait ou livraison.'),
+
+('Que faire en cas de colis endommagé ?',
+'Signalez immédiatement le dommage avec preuves visuelles. Si une assurance a été souscrite, une procédure d''indemnisation sera lancée.'),
+
+('Le taux de change peut-il changer ?',
+'Oui, le taux de change est mis à jour régulièrement en fonction du marché international.'),
+
+('Combien de temps prend un transfert via CTEXI Pay ?',
+'Un transfert prend généralement entre 24 et 72 heures selon la banque du bénéficiaire.'),
+
+('Mes transactions sont-elles sécurisées ?',
+'Oui, toutes les transactions sont traitées de manière sécurisée et confidentielle.'),
+
+('Puis-je obtenir une preuve de paiement ?',
+'Oui, une confirmation ou preuve de transaction est fournie après chaque paiement effectué.'),
+
+('Y a-t-il un montant minimum pour un transfert ?',
+'Oui, un montant minimum peut être requis selon la réglementation en vigueur.'),
+
+('Quels documents sont nécessaires pour une demande de visa ?',
+'Les documents incluent généralement passeport valide, photos, formulaire rempli, preuve d''hébergement et billet aller-retour.'),
+
+('Combien de temps prend l''obtention du visa ?',
+'Le délai varie selon le type de visa, généralement entre 5 et 15 jours ouvrables.'),
+
+('Proposez-vous une assistance à l''aéroport ?',
+'Oui, une assistance peut être organisée selon votre demande.'),
+
+('Puis-je modifier ma réservation ?',
+'Les modifications dépendent des conditions du billet ou de l''hôtel réservé.'),
+
+('Les formations sont-elles en ligne ou en présentiel ?',
+'Les formations peuvent être proposées en ligne ou en présentiel selon le programme choisi.'),
+
+('Recevrai-je un certificat après la formation ?',
+'Oui, un certificat de participation peut être délivré à la fin de la formation.'),
+
+('Les formations incluent-elles un accompagnement pratique ?',
+'Oui, certaines formations incluent des études de cas et un accompagnement personnalisé.'),
+
+('Comment créer un compte sur l''application ?',
+'Cliquez sur Inscription, remplissez vos informations personnelles et validez votre compte.'),
+
+('J''ai oublié mon mot de passe, que faire ?',
+'Cliquez sur Mot de passe oublié et suivez les instructions pour réinitialiser votre accès.'),
+
+('Comment supprimer mon compte ?',
+'Contactez le service client pour faire une demande de suppression de compte.'),
+
+('Comment modifier mes informations personnelles ?',
+'Accédez à votre profil dans l''application et mettez à jour vos informations.'),
+
+('L''application est-elle disponible sur Android et iOS ?',
+'Oui, l''application CTEXI est disponible sur Android et iOS.'),
+
+('Quels produits sont interdits à l''importation ?',
+'Les produits interdits incluent les marchandises dangereuses, contrefaçons et articles réglementés selon la législation locale.'),
+
+('Dois-je payer des frais de douane ?',
+'Oui, des droits de douane peuvent s''appliquer selon la nature et la valeur des marchandises.'),
+
+('CTEXI est-il responsable en cas de retard ?',
+'Les délais peuvent être affectés par des facteurs externes (douane, transport). Nous faisons le maximum pour minimiser les retards.'),
+
+('Proposez-vous un service client 24h/24 ?',
+'Le service client est disponible aux heures ouvrables. Vous pouvez laisser un message à tout moment.'),
+
+('Où se situe le siège de CTEXI ?',
+'Le siège est situé au Burkina Faso avec une représentation en Chine.');
+
+
+SELECT * FROM ctexi_db;
+
+
+--INSERT INTO chatbot.intentions (nom_intention, mots_cles, reponse) VALUES
+--('salutation', ARRAY['bonjour','salut','hello','bonsoir','hey'], 
+--'Bonjour 👋 Je suis votre assistant virtuel CTEXI-BOT. Comment puis-je vous aider aujourd’hui ?');
+
+
+
+
+SELECT * FROM auth.users;
