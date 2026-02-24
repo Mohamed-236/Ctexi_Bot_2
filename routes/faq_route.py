@@ -1,10 +1,12 @@
 from flask import Blueprint, jsonify, request, redirect
 from models.db_connect import get_db_connection
 from token_nize import token_required
+from models.sauvergarde import sauvegarder_conversation
+
 import psycopg2
 
 # Module NLP (traitement du langage naturel) personnalisé
-from nlp.faq_engine import find_best_match
+from nlp.faq_engine import trouver_meilleure_correspondance
 # - comprehension : fonction personnalisée pour analyser ou comprendre du texte
 
 
@@ -37,12 +39,29 @@ def chatbot_response():
     conn.close()
 
     # Appel moteur NLP
-    result = find_best_match(message, faq_data)
+    result = trouver_meilleure_correspondance(message, faq_data)
+
+    # -------------------------------
+    # Sauvegarde automatique dans la DB
+    # -------------------------------
+    try:
+        sauvegarder_conversation(
+            id_user=request.user_id,  # tu dois avoir l'ID utilisateur du token
+            message_utilisateur=message,
+            reponse_bot=result["reponse"]
+        )
+    except Exception as e:
+        print("Erreur lors de la sauvegarde:", e)
+
+
+
 
     return jsonify({
-        "status": "success",
-        "user": request.user_name,
-        "response": result["response"],
-        "confidence_score": round(result["confidence"], 2),
-        "matched": result["matched"]
-    }), 200
+    "status": "success",
+    "user": request.user_name,
+    "reponse": result["reponse"],               # au lieu de result["response"]
+    "confidence_score": round(result["confiance"], 2),  # au lieu de result["confidence"]
+    "matched": result["trouve"]                # au lieu de result["matched"]
+}), 200
+
+

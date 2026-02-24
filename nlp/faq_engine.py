@@ -1,67 +1,53 @@
-from .preprocessing import normalize_text, lemmatize_text, nlp
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+import random
 
-# Seuil de confiance minimum pour considérer une réponse comme pertinente
-CONFIDENCE_THRESHOLD = 0.65  # Seuil professionnel
+# Chargement modèle une seule fois
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+SEUIL_CONFIANCE = 0.60
+
+FAQ_CACHE = []
+FAQ_EMBEDDINGS = None
 
 
-def find_best_match(user_message, faq_data):
-    """
-    Trouve la meilleure correspondance entre le message de l'utilisateur
-    et les questions de la FAQ, en utilisant la similarité sémantique de spaCy.
-    
-    Arguments :
-    - user_message : str, le texte envoyé par l'utilisateur
-    - faq_data : list de dicts, chaque dict contient :
-        - "message_user" : question de la FAQ
-        - "reponse_bot" : réponse associée à la question
-    
-    Retour :
-    - dict contenant :
-        - "response" : texte de la réponse
-        - "confidence" : score de similarité
-        - "matched" : True si la correspondance est supérieure au seuil
-    """
+def charger_faq_embeddings(faq_data):
+    global FAQ_CACHE, FAQ_EMBEDDINGS
 
-    # 1. Normalisation + lemmatisation du message utilisateur
-    normalized = normalize_text(user_message)         # nettoyage du texte (minuscules, ponctuation, etc.)
-    lemmatized_user = lemmatize_text(normalized)     # réduction des mots à leur forme de base
-    doc_user = nlp(lemmatized_user)                 # création d'un objet spaCy pour calculer la similarité
+    FAQ_CACHE = faq_data
+    questions = [item["message_user"] for item in faq_data]
 
-    # Initialisation des variables pour la meilleure correspondance
-    best_score = 0
-    best_answer = None
+    FAQ_EMBEDDINGS = model.encode(questions)
 
-    # 2. Parcours de toutes les questions de la FAQ
-    for faq in faq_data:
-        # Normalisation et lemmatisation de la question de la FAQ
-        question = normalize_text(faq["message_user"])
-        lemmatized_question = lemmatize_text(question)
-        doc_faq = nlp(lemmatized_question)
 
-        # Calcul du score de similarité sémantique entre message utilisateur et question FAQ
-        score = doc_user.similarity(doc_faq)
+def trouver_meilleure_correspondance(message_utilisateur, faq_data):
+    global FAQ_CACHE, FAQ_EMBEDDINGS
 
-        # Mise à jour de la meilleure correspondance si le score est plus élevé
-        if score > best_score:
-            best_score = score
-            best_answer = faq["reponse_bot"]
+    # Charger embeddings une seule fois
+    if not FAQ_CACHE:
+        charger_faq_embeddings(faq_data)
 
-    # 3. Vérification si le score dépasse le seuil de confiance
-    if best_score < CONFIDENCE_THRESHOLD:
+    # Embedding utilisateur
+    user_embedding = model.encode([message_utilisateur])
+
+    # Similarité cosine
+    scores = cosine_similarity(user_embedding, FAQ_EMBEDDINGS)[0]
+
+    meilleur_index = np.argmax(scores)
+    meilleure_confiance = scores[meilleur_index]
+
+    if meilleure_confiance < SEUIL_CONFIANCE:
         return {
-            "response": "Je ne comprends pas bien votre demande. Pouvez-vous reformuler ?",
-            "confidence": best_score,
-            "matched": False
+            "reponse": "Je ne comprends pas bien votre demande. Pouvez-vous reformuler ?",
+            "confiance": float(meilleure_confiance),
+            "trouve": False
         }
 
-    # 4. Retour de la réponse correspondante si seuil atteint
     return {
-        "response": best_answer,
-        "confidence": best_score,
-        "matched": True
+        "reponse": FAQ_CACHE[meilleur_index]["reponse_bot"],
+        "confiance": float(meilleure_confiance),
+        "trouve": True
     }
-
-
-
 
 
