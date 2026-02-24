@@ -35,7 +35,7 @@
     <div class="card">
         <h2>Inscription</h2>
 
-        <form method="POST" action="{{url_for('chatbot.register')}}" class="form-grid">
+        <form method="POST" action="{{url_for('auth.register')}}" class="form-grid">
             <!-- Ligne 1 : Nom et Prénom -->
             <div class="input-group">
                 <label>Nom</label>
@@ -69,7 +69,7 @@
         </form>
 
         <p class="switch">
-            Déjà inscrit ? <a href="{{ url_for('chatbot.login') }}">Se connecter</a>
+            Déjà inscrit ? <a href="{{ url_for('auth.login') }}">Se connecter</a>
         </p>
     </div>
 </div>

@@ -1,0 +1,52 @@
+
+### API POUR L'INSCRIPTION
+
+POST  http://127.0.0.1:5000/api/auth/register
+
+Content-Type: application/json
+
+{
+  "nom"      : "Mokonzi",
+  "prenom"   : "Yakfis",
+  "email"    : "yakfis@example.com",
+  "telephone": "12345678",
+  "mdp"      : "6666"
+}
+
+
+### API CONNEXION
+
+POST  http://127.0.0.1:5000/api/auth/login
+
+Content-Type: application/json
+
+{
+  "email": "yakfis@example.com",
+  "mdp": "6666"
+}
+
+
+
+### API DE DECONNEXION:
+
+POST  http://127.0.0.1:5000/api/auth/logout
+
+Content-Type: application/json
+
+{
+  "email": "yakfis@example.com",
+  "mdp": "6666"
+}
+
+
+
+### API CHATBOT
+
+POST  http://127.0.0.1:5000/api/faq/message
+
+Content-Type: application/json
+
+{
+  "message": "salut"
+  
+}

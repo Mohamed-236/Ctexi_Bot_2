@@ -3,6 +3,8 @@
 
 -----------------------------------CREATION DES SCHEMA---------------------------------------------------
 
+
+
 -- ---------AUTH
 CREATE SCHEMA IF NOT EXISTS auth;
 
@@ -23,13 +25,9 @@ CREATE SCHEMA IF NOT EXISTS systems;
 
 
 
-
-
---------------------------------------SCHEMA AUTH-----------------------------------------------
+--------------------------------------SCHEMA AUTH---------------------------------------------------
 
 #  DROP TABLE auth.users;
-
-
 
 
 
@@ -65,14 +63,28 @@ CREATE TABLE auth.agents(
 
 
 -------------------------------------SCHEMA CHATBOT--------------------------------------------------------------
+DROP TABLE chatbot.faq CASCADE;
+DROP TABLE chatbot.intention CASCADE;
+
+
+
+
 
 --table faq
+
+
 CREATE TABLE chatbot.faq(
     id_faq SERIAL PRIMARY KEY,
     message_user TEXT,
     reponse_bot TEXT,
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
+
+
+
 
 
 
@@ -89,7 +101,6 @@ CREATE TABLE chatbot.conversations(
 
 
 
-
 --table sessions
 CREATE TABLE chatbot.sessions(
     id_sess SERIAL PRIMARY KEY,
@@ -101,11 +112,13 @@ CREATE TABLE chatbot.sessions(
 
 
 --Table intention
+
 CREATE TABLE chatbot.intention(
     id_intent SERIAL PRIMARY KEY,
     nom VARCHAR(100) NOT NULL,
     descriptions TEXT
 );
+
 
 
 
@@ -347,3 +360,6 @@ SELECT * FROM ctexi_db;
 
 
 SELECT * FROM auth.users;
+
+SELECT * FROM chatbot.faq;
+SELECT * FROM chatbot.intention;
