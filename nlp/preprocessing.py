@@ -30,6 +30,7 @@ def text_normaliser(text: str) -> str:
 
     # Supprimer espaces multiples
     text = re.sub(r"\s+", " ", text).strip()
+    text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
 
     return text
 

@@ -1,3 +1,4 @@
+
 import os                              # permet de manipuler les fichiers et variables d'environnement
 from dotenv import load_dotenv         # pour charger les variables d'environnement depuis le fichier .env
 

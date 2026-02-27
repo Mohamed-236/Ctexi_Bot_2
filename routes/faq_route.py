@@ -39,14 +39,14 @@ def chatbot_response():
     conn.close()
 
     # Appel moteur NLP
-    result = trouver_meilleure_correspondance(message, faq_data)
+    result = trouver_meilleure_correspondance(message)
 
     # -------------------------------
     # Sauvegarde automatique dans la DB
     # -------------------------------
     try:
         sauvegarder_conversation(
-            id_user=request.user_id,  # tu dois avoir l'ID utilisateur du token
+            id_user=request.user_id,  
             message_utilisateur=message,
             reponse_bot=result["reponse"]
         )
@@ -59,9 +59,7 @@ def chatbot_response():
     return jsonify({
     "status": "success",
     "user": request.user_name,
-    "reponse": result["reponse"],               # au lieu de result["response"]
-    "confidence_score": round(result["confiance"], 2),  # au lieu de result["confidence"]
-    "matched": result["trouve"]                # au lieu de result["matched"]
+    "reponse": result["reponse"],               
+    "confidence_score": round(result["confiance"], 2),  
+    "matched": result["trouve"]                
 }), 200
-
-
