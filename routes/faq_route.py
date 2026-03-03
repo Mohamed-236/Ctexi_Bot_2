@@ -2,7 +2,6 @@ from flask import Blueprint, jsonify, request, redirect
 from models.db_connect import get_db_connection
 from token_nize import token_required
 from models.sauvergarde import sauvegarder_conversation
-
 import psycopg2
 
 # Module NLP (traitement du langage naturel) personnalisé
@@ -16,7 +15,6 @@ from nlp.faq_engine import trouver_meilleure_correspondance
 # ====================================================================
 
 faq_bp = Blueprint("faq", __name__, url_prefix="/api/faq")
-
 
 
 
@@ -48,7 +46,9 @@ def chatbot_response():
         sauvegarder_conversation(
             id_user=request.user_id,  
             message_utilisateur=message,
-            reponse_bot=result["reponse"]
+            reponse_bot=result["reponse"],
+            intention=result.get('intention'),
+            type_intent=result.get('type')
         )
     except Exception as e:
         print("Erreur lors de la sauvegarde:", e)
@@ -63,3 +63,4 @@ def chatbot_response():
     "confidence_score": round(result["confiance"], 2),  
     "matched": result["trouve"]                
 }), 200
+

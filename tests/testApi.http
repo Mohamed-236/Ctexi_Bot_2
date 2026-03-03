@@ -50,3 +50,12 @@ Content-Type: application/json
   "message": "salut"
   
 }
+
+
+
+
+### API INDEX(Pour les test depuis le navigateur)
+http://localhost:5000/api/auth/index
+
+
+### API 

@@ -79,6 +79,14 @@ DROP TABLE chatbot.faq CASCADE;
 DROP TABLE chatbot.intention CASCADE;
 
 
+-- Supprime toutes les lignes de la table FAQ
+DELETE FROM chatbot.faq;
+
+-- Supprime toutes les lignes de la table intention
+DELETE FROM chatbot.intention;
+
+
+SELECT * FROM chatbot.conversations;
 
 SET search_path TO chatbot, public;
 
@@ -90,13 +98,16 @@ SELECT extname FROM pg_extension;
 
 CREATE TABLE chatbot.faq(
     id_faq SERIAL PRIMARY KEY,
+    id_intent INT REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
     message_user TEXT,
     reponse_bot TEXT,
-    embedding vector(768),
+    embedding vector(384),
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
+SELECT * FROM chatbot.faq;
+--embedding vector(768) pour le model developper ,
 
 SELECT * FROM auth.users;
 
@@ -114,29 +125,102 @@ CREATE TABLE chatbot.conversations(
 );
 
 
+ALTER TABLE chatbot.conversations
+ADD COLUMN intention VARCHAR(255),
+ADD COLUMN type_intent VARCHAR(50);
+-----------------------------
+
+TRUNCATE TABLE chatbot.conversations RESTART IDENTITY CASCADE;
 
 
 
---table sessions
+
+
+
+--Table sessions
 CREATE TABLE chatbot.sessions(
     id_sess SERIAL PRIMARY KEY,
     id_user INTEGER REFERENCES auth.users(id_user) ON DELETE CASCADE,
     heure_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     heure_fin TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    statut VARCHAR(50)
+    statut VARCHAR(50) NOT NULL
 );
 
+
+
+SELECT * FROM chatbot.intention;
+
+SELECT * FROM chatbot.faq;
+
+
+--Ajout d'embeding dans intention
+SET search_path TO chatbot, public;
+
+ALTER TABLE chatbot.intention
+ADD COLUMN embedding vector();
+
+
+
+-- Supprime toutes les lignes et réinitialise les séquences
+TRUNCATE TABLE chatbot.faq RESTART IDENTITY CASCADE;
+TRUNCATE TABLE chatbot.intention RESTART IDENTITY CASCADE;
+
+-- Supprimer la colonne
+ALTER TABLE chatbot.faq DROP COLUMN embedding;
+ALTER TABLE chatbot.intention DROP COLUMN embedding;
+
+
+-- Supprimer la colonne embedding
+ALTER TABLE chatbot.faq DROP COLUMN embedding;
+ALTER TABLE chatbot.intention DROP COLUMN embedding;
+
+-- Recréer la colonne embedding avec 768 dimensions
+ALTER TABLE chatbot.faq ADD COLUMN embedding vector(768);
+ALTER TABLE chatbot.intention ADD COLUMN embedding vector(768);
+
+
+
+UPDATE chatbot.intention SET embedding = NULL;
+
+-- Pour chatbot.faq
+UPDATE chatbot.faq
+SET embedding = NULL;
+
+-- Pour chatbot.intention
+UPDATE chatbot.intention
+SET embedding = NULL;
 
 --Table intention
 
 CREATE TABLE chatbot.intention(
     id_intent SERIAL PRIMARY KEY,
-    nom VARCHAR(100) NOT NULL,
-    descriptions TEXT
+    nom VARCHAR(100) UNIQUE NOT NULL,
+    type_intent VARCHAR(50) NOT NULL,
+    descriptions TEXT,
+    dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
+SELECT * FROM chatbot.intention;
 
+--Insertion
+INSERT INTO chatbot.intention(nom, type_intent, descriptions)
+VALUES
+('salutation', 'social', 'Regroupe toutes les salutations et réponses types comme bonjour, salut, hi, hey, yo'),
+('au_revoir', 'social', 'Réponses aux messages de type au revoir ou bye'),
+('remerciement', 'social', 'Réponses aux messages de remerciements ou appréciations'),
+('validation', 'social', 'Réponses aux messages de configurations tel ok etc..'),
+
+('faq_buy', 'information', 'Questions fréquentes sur le service CTEXI Buy'),
+('faq_travel', 'information', 'Questions fréquentes sur le service CTEXI Travel'),
+('faq_academie', 'information', 'Questions fréquentes sur le service CTEXI Académie'),
+('faq_cargo', 'information', 'Questions fréquentes sur le service CTEXI cargo'),
+
+('suivi_colis', 'operation', 'Requêtes liées au suivi des colis par code ou compte client'),
+('taux_change', 'operation', 'Questions liées au taux de change ou simulation CTEXI Pay');
+
+
+SELECT * FROM chatbot.intention;
 
 -- Table reponse_intention
 
@@ -220,166 +304,137 @@ CREATE TABLE systems.notification(
 
 -------------------------------Insertion des donnees dans les tables faq----------------------------------
 
---FAQ
-INSERT INTO chatbot.faq (message_user, reponse_bot) VALUES
+-- =======================
+-- salutation (id_intent = 1)
+-- =======================
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(1, 'salut', 'Bonjour ! Comment puis-je vous aider aujourd''hui ?'),
+(1, 'bonjour', 'Bonjour ! Que puis-je faire pour vous ?'),
+(1, 'bonsoir', 'Bonsoir ! Comment puis-je vous aider ?'),
+(1, 'hello', 'Hello 👋 Comment puis-je vous aider ?'),
+(1, 'hi', 'Hi ! Que puis-je faire pour vous aujourd''hui ?'),
+(1, 'hey', 'Hey ! Ravi de vous voir !');
 
-('Comment fonctionne le service CTEXI Buy ?',
-'CTEXI Buy vous aide à acheter des produits en Chine. Vous nous fournissez les caractéristiques du produit, nous recherchons les fournisseurs fiables, achetons, vérifions la qualité, conditionnons et expédions le produit vers vous.'),
+-- =======================
+-- au_revoir (id_intent = 2)
+-- =======================
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(2, 'au revoir', 'Au revoir ! À bientôt.'),
+(2, 'bye', 'Bye ! Passez une excellente journée !'),
+(2, 'a+', 'À la prochaine !');
 
-('Quels sont les avantages de CTEXI Buy ?',
-'Les avantages incluent la sécurité, notre expertise en Chine, la réduction des risques liés à l''achat et l''assurance de conformité avec vos demandes.'),
+-- =======================
+-- remerciement (id_intent = 3)
+-- =======================
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(3, 'merci', 'Avec plaisir ! N''hésitez pas si vous avez d''autres questions.'),
+(3, 'merci beaucoup', 'Je vous en prie !');
 
-('Comment suivre le processus de mon achat ?',
-'Vous pouvez suivre chaque étape : recherche produit, sourcing, achat, vérification qualité, conditionnement et expédition. Nous vous tenons informé à chaque étape.'),
+-- =======================
+-- validation (id_intent = 4)
+-- =======================
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(4, 'ok', 'Bien. Avez-vous d''autres questions ?'),
+(4, 'd''accord', 'Super !!! Si vous avez d''autres choses à me demander, n''hésitez pas !'),
+(4, 'cool', 'Super !!! Si vous avez d''autres choses à me demander, n''hésitez pas !'),
+(4, 'yfy', 'Bien reçu ! Avez-vous d''autres questions ?');
 
-('Comment suivre mon colis ?',
-'Connectez-vous avec votre numéro de téléphone. Tous les colis enregistrés sous ce numéro apparaissent avec leur statut actuel, mode de transport et dernière mise à jour.'),
+-- =======================
+-- faq_buy (id_intent = 5)
+-- =======================
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(5, 'comment fonctionne votre service ctexi buy ?', 'CTEXI Buy vous aide à acheter des produits en Chine. Vous nous fournissez les caractéristiques du produit, nous recherchons les fournisseurs fiables, achetons, vérifions la qualité, conditionnons et expédions le produit vers vous.'),
+(5, 'avantages ctexi buy ?', 'Les avantages incluent la sécurité, notre expertise en Chine, la réduction des risques et l''assurance de conformité avec vos demandes.'),
+(5, 'combien de temps pour une commande ?', 'Le délai dépend du fournisseur et du mode de transport choisi. En moyenne : 3 à 7 jours pour l''achat et vérification, puis 7 à 45 jours pour la livraison selon transport aérien ou maritime.'),
+(5, 'verification avant expédition possible ?', 'Oui, nous effectuons un contrôle qualité avant l''expédition pour vérifier la conformité des produits avec votre commande.'),
+(5, 'produit non conforme que faire ?', 'Contactez immédiatement notre service client avec photos et description du problème. Nous analyserons la situation avec le fournisseur.'),
+(5, 'assurance marchandise ?', 'Oui, une assurance transport peut être ajoutée pour couvrir les pertes ou dommages pendant l''expédition.'),
+(5, 'je veux annuler ma commande', 'L''annulation est possible uniquement si la commande n''a pas encore été payée au fournisseur.');
 
-('Que signifie le statut "En transit" ?',
-'Cela signifie que votre colis a quitté l''entrepôt et est en route vers le Burkina Faso.'),
+-- =======================
+-- faq_travel (id_intent = 6)
+-- =======================
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(6, 'comment obtenir visa chine ?', 'CTEXI Travel vous guide pour obtenir le visa chinois. Nous fournissons la liste des documents requis, les délais et vous aidons à remplir votre demande.'),
+(6, 'reservation billet ou hotel ?', 'Oui, le service permet la réservation de billets d''avion et d''hôtels en Chine. Contactez directement un agent CTEXI.'),
+(6, 'documents visa ?', 'Passeport valide, photos, formulaire rempli, preuve d''hébergement et billet aller-retour.'),
+(6, 'delais obtention visa ?', 'Le délai varie selon le type de visa, généralement entre 5 et 15 jours ouvrables.'),
+(6, 'assistance aeroport ?', 'Oui, une assistance peut être organisée selon votre demande.'),
+(6, 'modification reservation ?', 'Les modifications dépendent des conditions du billet ou de l''hôtel réservé.');
 
-('Que faire si mon code de colis est invalide ?',
-'Vérifiez le code et assurez-vous qu''il correspond à un colis enregistré. En cas de problème, contactez notre service client via WhatsApp ou mail.'),
+-- =======================
+-- faq_academie (id_intent = 7)
+-- =======================
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(7, 'formations proposees ?', 'CTEXI Académie propose des formations sur les achats en ligne en Chine, l''import-export, le marketing digital et du coaching.'),
+(7, 'formation en ligne ou presentiel ?', 'Les formations peuvent être en ligne ou en présentiel selon le programme choisi.'),
+(7, 'comment m inscrire ?', 'Cliquez sur ''S''inscrire / Demander infos'' et contactez-nous via WhatsApp, email ou formulaire pour réserver votre place.'),
+(7, 'certificat formation ?', 'Oui, un certificat de participation peut être délivré à la fin de la formation.'),
+(7, 'accompagnement pratique ?', 'Certaines formations incluent des études de cas et un accompagnement personnalisé.');
 
-('Quel est le taux de change du jour ?',
-'Le taux indicatif du jour est affiché dans l''application CTEXI Pay. Exemple : 1 RMB = 85 FCFA.'),
+-- =======================
+-- faq_cargo (id_intent = 8)
+-- =======================
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(8, 'quels services ctexi ?', 'CTEXI propose Buy (achat en Chine), Cargo (expédition), Pay (transfert d''argent), Travel (voyage) et Académie (formation et coaching).'),
+(8, 'siege ctexi ?', 'Le siège est situé au Burkina Faso avec une représentation en Chine.'),
+(8, 'produits interdits import ?', 'Les produits interdits incluent les marchandises dangereuses, contrefaçons et articles réglementés selon la législation locale.'),
+(8, 'frais douane ?', 'Oui, des droits de douane peuvent s''appliquer selon la nature et la valeur des marchandises.'),
+(8, 'responsable retard ?', 'Les délais peuvent être affectés par des facteurs externes (douane, transport). Nous faisons le maximum pour minimiser les retards.'),
+(8, 'service client 24h ?', 'Le service client est disponible aux heures ouvrables. Vous pouvez laisser un message à tout moment.');
 
-('Comment calculer le montant à payer ?',
-'Entrez le montant en RMB dans la simulation. L''application calcule automatiquement le total à payer en FCFA selon le taux du jour.'),
+-- =======================
+-- suivi_colis (id_intent = 9)
+-- =======================
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(9, 'cmt suiv mon colis ?', 'Connectez-vous avec votre numéro de téléphone pour voir tous vos colis et leurs statuts.'),
+(9, 'je veu annuler ma cmd', 'L''annulation est possible uniquement si la commande n''a pas encore été payée au fournisseur.'),
+(9, 'comment suivre mon colis ?', 'Connectez-vous avec votre numéro de téléphone. Tous les colis enregistrés sous ce numéro apparaissent avec leur statut actuel, mode de transport et dernière mise à jour.'),
+(9, 'que signifie le statut en transit ?', 'Cela signifie que votre colis a quitté l''entrepôt et est en route vers le Burkina Faso.'),
+(9, 'statut arrivé au dépôt ?', 'Votre colis est arrivé dans notre entrepôt local et est prêt pour retrait ou livraison.'),
+(9, 'code colis invalide', 'Vérifiez le code et assurez-vous qu''il correspond à un colis enregistré. En cas de problème, contactez notre service client via WhatsApp ou mail.'),
+(9, 'plusieurs colis suivi ?', 'Vous pouvez suivre plusieurs colis en même temps, aucun nombre limité.'),
+(9, 'changement numero telephone', 'Vous pouvez ré-ajouter le code, le colis sera automatiquement rattaché à votre compte.'),
+(9, 'delais fret aerien ?', 'Le fret aérien prend généralement entre 7 et 15 jours selon la destination.'),
+(9, 'delais fret maritime ?', 'Le fret maritime prend en moyenne entre 30 et 45 jours selon le port de départ.'),
+(9, 'frais transport calcul ?', 'Les frais sont calculés selon le poids volumétrique, le mode de transport et la destination finale.'),
+(9, 'colis endommagé que faire ?', 'Signalez immédiatement le dommage avec preuves visuelles. Si une assurance a été souscrite, une procédure d''indemnisation sera lancée.');
 
-('Comment effectuer un paiement ?',
-'Cliquez sur "Valider et contacter CTEXI Pay" pour envoyer un message WhatsApp pré-rempli avec vos informations de paiement.'),
-
-('Comment obtenir un visa pour la Chine ?',
-'CTEXI Travel vous guide dans l''obtention du visa chinois. Nous fournissons la liste des documents requis, les délais et vous aidons à remplir votre demande.'),
-
-('Puis-je réserver un billet d''avion ou un hôtel via CTEXI Travel ?',
-'Oui, le service permet la réservation de billets d''avion et d''hôtels en Chine. Vous pouvez contacter directement un agent CTEXI pour assistance.'),
-
-('Quels types de formations propose CTEXI Académie ?',
-'CTEXI Académie propose des formations sur les achats en ligne en Chine, l''import-export, le marketing digital et du coaching.'),
-
-('Comment m''inscrire à une formation ?',
-'Cliquez sur "S''inscrire / Demander infos" et contactez-nous via WhatsApp, email ou formulaire pour réserver votre place.'),
-
-('Comment contacter CTEXI ?',
-'Vous pouvez nous contacter via WhatsApp, email ou téléphone depuis l''application.'),
-
-('Quels services propose CTEXI ?',
-'CTEXI propose Buy (achat en Chine), Cargo (expédition), Pay (transfert d''argent), Travel (voyage) et Académie (formation et coaching).'),
-
-('Combien de temps prend une commande via CTEXI Buy ?',
-'Le délai dépend du fournisseur et du mode de transport choisi. En moyenne : 3 à 7 jours pour l''achat et vérification, puis 7 à 45 jours pour la livraison selon transport aérien ou maritime.'),
-
-('Puis-je demander une vérification qualité avant expédition ?',
-'Oui, nous effectuons un contrôle qualité avant l''expédition afin de vérifier la conformité des produits avec votre commande.'),
-
-('Que faire si le produit reçu n''est pas conforme ?',
-'Contactez immédiatement notre service client avec photos et description du problème. Nous analyserons la situation avec le fournisseur.'),
-
-('Puis-je annuler une commande ?',
-'L''annulation est possible uniquement si la commande n''a pas encore été payée au fournisseur.'),
-
-('Proposez-vous une assurance marchandise ?',
-'Oui, une assurance transport peut être ajoutée pour couvrir les pertes ou dommages pendant l''expédition.'),
-
-('Quels sont les délais de livraison en fret aérien ?',
-'Le fret aérien prend généralement entre 7 et 15 jours selon la destination.'),
-
-('Quels sont les délais de livraison en fret maritime ?',
-'Le fret maritime prend en moyenne entre 30 et 45 jours selon le port de départ.'),
-
-('Comment sont calculés les frais de transport ?',
-'Les frais sont calculés selon le poids volumétrique, le mode de transport et la destination finale.'),
-
-('Que signifie le statut "Arrivé au dépôt" ?',
-'Cela signifie que votre colis est arrivé dans notre entrepôt local et est prêt pour retrait ou livraison.'),
-
-('Que faire en cas de colis endommagé ?',
-'Signalez immédiatement le dommage avec preuves visuelles. Si une assurance a été souscrite, une procédure d''indemnisation sera lancée.'),
-
-('Le taux de change peut-il changer ?',
-'Oui, le taux de change est mis à jour régulièrement en fonction du marché international.'),
-
-('Combien de temps prend un transfert via CTEXI Pay ?',
-'Un transfert prend généralement entre 24 et 72 heures selon la banque du bénéficiaire.'),
-
-('Mes transactions sont-elles sécurisées ?',
-'Oui, toutes les transactions sont traitées de manière sécurisée et confidentielle.'),
-
-('Puis-je obtenir une preuve de paiement ?',
-'Oui, une confirmation ou preuve de transaction est fournie après chaque paiement effectué.'),
-
-('Y a-t-il un montant minimum pour un transfert ?',
-'Oui, un montant minimum peut être requis selon la réglementation en vigueur.'),
-
-('Quels documents sont nécessaires pour une demande de visa ?',
-'Les documents incluent généralement passeport valide, photos, formulaire rempli, preuve d''hébergement et billet aller-retour.'),
-
-('Combien de temps prend l''obtention du visa ?',
-'Le délai varie selon le type de visa, généralement entre 5 et 15 jours ouvrables.'),
-
-('Proposez-vous une assistance à l''aéroport ?',
-'Oui, une assistance peut être organisée selon votre demande.'),
-
-('Puis-je modifier ma réservation ?',
-'Les modifications dépendent des conditions du billet ou de l''hôtel réservé.'),
-
-('Les formations sont-elles en ligne ou en présentiel ?',
-'Les formations peuvent être proposées en ligne ou en présentiel selon le programme choisi.'),
-
-('Recevrai-je un certificat après la formation ?',
-'Oui, un certificat de participation peut être délivré à la fin de la formation.'),
-
-('Les formations incluent-elles un accompagnement pratique ?',
-'Oui, certaines formations incluent des études de cas et un accompagnement personnalisé.'),
-
-('Comment créer un compte sur l''application ?',
-'Cliquez sur Inscription, remplissez vos informations personnelles et validez votre compte.'),
-
-('J''ai oublié mon mot de passe, que faire ?',
-'Cliquez sur Mot de passe oublié et suivez les instructions pour réinitialiser votre accès.'),
-
-('Comment supprimer mon compte ?',
-'Contactez le service client pour faire une demande de suppression de compte.'),
-
-('Comment modifier mes informations personnelles ?',
-'Accédez à votre profil dans l''application et mettez à jour vos informations.'),
-
-('L''application est-elle disponible sur Android et iOS ?',
-'Oui, l''application CTEXI est disponible sur Android et iOS.'),
-
-('Quels produits sont interdits à l''importation ?',
-'Les produits interdits incluent les marchandises dangereuses, contrefaçons et articles réglementés selon la législation locale.'),
-
-('Dois-je payer des frais de douane ?',
-'Oui, des droits de douane peuvent s''appliquer selon la nature et la valeur des marchandises.'),
-
-('CTEXI est-il responsable en cas de retard ?',
-'Les délais peuvent être affectés par des facteurs externes (douane, transport). Nous faisons le maximum pour minimiser les retards.'),
-
-('Proposez-vous un service client 24h/24 ?',
-'Le service client est disponible aux heures ouvrables. Vous pouvez laisser un message à tout moment.'),
-
-('Où se situe le siège de CTEXI ?',
-'Le siège est situé au Burkina Faso avec une représentation en Chine.');
+-- =======================
+-- taux_change (id_intent = 10)
+-- =======================
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(10, 'combien le transfert', 'Un transfert prend généralement entre 24 et 72 heures selon la banque du bénéficiaire.'),
+(10, 'taux change du jour', 'Le taux indicatif du jour est affiché dans l''application CTEXI Pay. Exemple : 1 RMB = 85 FCFA.'),
+(10, 'simulation paiement', 'Entrez le montant en RMB, l''application calcule automatiquement le total à payer en FCFA.'),
+(10, 'demande paiement', 'Cliquez sur "Valider et contacter CTEXI Pay" pour envoyer un message WhatsApp pré-rempli avec vos informations.'),
+(10, 'transaction securisee ?', 'Oui, toutes les transactions sont traitées de manière sécurisée et confidentielle.'),
+(10, 'preuve paiement ?', 'Oui, une confirmation ou preuve de transaction est fournie après chaque paiement effectué.'),
+(10, 'montant minimum transfert ?', 'Un montant minimum peut être requis selon la réglementation en vigueur.'),
+(10, 'delai transfert ?', 'Un transfert prend généralement entre 24 et 72 heures selon la banque du bénéficiaire.');
 
 
-SELECT * FROM ctexi_db;
-
-
---INSERT INTO chatbot.intentions (nom_intention, mots_cles, reponse) VALUES
---('salutation', ARRAY['bonjour','salut','hello','bonsoir','hey'], 
---'Bonjour 👋 Je suis votre assistant virtuel CTEXI-BOT. Comment puis-je vous aider aujourd’hui ?');
-
-
-
-
-SELECT * FROM auth.users;
 
 SELECT * FROM chatbot.faq;
-SELECT * FROM chatbot.intention;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--FAQ
 
 INSERT INTO chatbot.faq (message_user, reponse_bot) VALUES
 ('salut','Bonjour ! Comment puis-je vous aider aujourd''hui ?'),
@@ -452,3 +507,20 @@ INSERT INTO chatbot.faq (message_user, reponse_bot) VALUES
 ('frais douane ?','Oui, des droits de douane peuvent s''appliquer selon la nature et la valeur des marchandises.'),
 ('responsable retard ?','Les délais peuvent être affectés par des facteurs externes (douane, transport). Nous faisons le maximum pour minimiser les retards.'),
 ('service client 24h ?','Le service client est disponible aux heures ouvrables. Vous pouvez laisser un message à tout moment.');
+
+
+SELECT * FROM ctexi_db;
+
+
+--INSERT INTO chatbot.intentions (nom_intention, mots_cles, reponse) VALUES
+--('salutation', ARRAY['bonjour','salut','hello','bonsoir','hey'], 
+--'Bonjour 👋 Je suis votre assistant virtuel CTEXI-BOT. Comment puis-je vous aider aujourd’hui ?');
+
+
+
+
+SELECT * FROM auth.users;
+
+SELECT * FROM chatbot.faq;
+SELECT * FROM chatbot.intention;
+
