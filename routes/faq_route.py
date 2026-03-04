@@ -48,7 +48,6 @@ def chatbot_response():
             message_utilisateur=message,
             reponse_bot=result["reponse"],
             intention=result.get('intention'),
-            type_intent=result.get('type')
         )
     except Exception as e:
         print("Erreur lors de la sauvegarde:", e)

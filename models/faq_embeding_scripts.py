@@ -10,8 +10,8 @@ from models.db_connect import get_db_connection
 # CHARGEMENT DU MODELE
 # ================================
 # model = SentenceTransformer("all-MiniLM-L6-v2")
-model = SentenceTransformer("all-mpnet-base-v2")
-
+# model = SentenceTransformer("all-mpnet-base-v2")
+model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
 # ================================
 # FONCTION PRINCIPALE
 # ================================

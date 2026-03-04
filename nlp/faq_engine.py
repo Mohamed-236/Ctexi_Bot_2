@@ -16,7 +16,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # ==========================
 # CONFIG
 # ==========================
-model = SentenceTransformer("all-mpnet-base-v2")  # 768 dims
+model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+
+# model = SentenceTransformer("all-mpnet-base-v2")  # 768 dims
 SEUIL_INTENTION_FIXE = 0.45
 SEUIL_FAQ = 0.60
 SEUIL_ADAPTATIF_MARGIN = 0.1  # tolérance pour intention
@@ -146,7 +148,6 @@ def trouver_meilleure_correspondance(message_utilisateur):
         "confiance": float(score_faq),
         "trouve": True,
         "intention": intention["nom"],
-        "type": intention["type_intent"]
     }
 
 

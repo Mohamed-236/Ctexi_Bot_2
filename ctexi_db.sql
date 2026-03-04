@@ -9,7 +9,6 @@
 -- installation de  pgvector(extension de postgres) pour la creation des embedding
 CREATE EXTENSION IF NOT EXISTS vector;
 
-
 SET search_path TO public;
 
 -- Mdp:postgres: Yakfis@226
@@ -33,14 +32,9 @@ CREATE SCHEMA IF NOT EXISTS systems;
 ---------------------CREATION DES TABLES POUR LES SCHEMAS-------------------------------------------
 
 
-SELECT * FROM chatbot.faq;
-
 
 
 --------------------------------------SCHEMA AUTH---------------------------------------------------
-
-#  DROP TABLE auth.users;
-
 
 
 -- Table users
@@ -55,8 +49,6 @@ CREATE TABLE auth.users(
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     
 ); 
-
-
 
 
 
@@ -75,24 +67,6 @@ CREATE TABLE auth.agents(
 
 
 -------------------------------------SCHEMA CHATBOT--------------------------------------------------------------
-DROP TABLE chatbot.faq CASCADE;
-DROP TABLE chatbot.intention CASCADE;
-
-
--- Supprime toutes les lignes de la table FAQ
-DELETE FROM chatbot.faq;
-
--- Supprime toutes les lignes de la table intention
-DELETE FROM chatbot.intention;
-
-
-SELECT * FROM chatbot.conversations;
-
-SET search_path TO chatbot, public;
-
-
-SELECT extname FROM pg_extension;
-
 
 --table faq
 
@@ -106,14 +80,6 @@ CREATE TABLE chatbot.faq(
 );
 
 
-SELECT * FROM chatbot.faq;
---embedding vector(768) pour le model developper ,
-
-SELECT * FROM auth.users;
-
-
-SELECT id_user FROM auth.users;
-
 
 --Table convesation
 CREATE TABLE chatbot.conversations(
@@ -121,18 +87,14 @@ CREATE TABLE chatbot.conversations(
     id_user INTEGER NOT NULL REFERENCES auth.users(id_user) ON DELETE CASCADE,
     message_user TEXT NOT NULL,
     reponse_bot TEXT,
+    intention VARCHAR(255),
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
-ALTER TABLE chatbot.conversations
-ADD COLUMN intention VARCHAR(255),
-ADD COLUMN type_intent VARCHAR(50);
------------------------------
+DROP TABLE chatbot.conversations CASCADE;
 
 TRUNCATE TABLE chatbot.conversations RESTART IDENTITY CASCADE;
-
-
 
 
 
@@ -148,47 +110,7 @@ CREATE TABLE chatbot.sessions(
 
 
 
-SELECT * FROM chatbot.intention;
 
-SELECT * FROM chatbot.faq;
-
-
---Ajout d'embeding dans intention
-SET search_path TO chatbot, public;
-
-ALTER TABLE chatbot.intention
-ADD COLUMN embedding vector();
-
-
-
--- Supprime toutes les lignes et réinitialise les séquences
-TRUNCATE TABLE chatbot.faq RESTART IDENTITY CASCADE;
-TRUNCATE TABLE chatbot.intention RESTART IDENTITY CASCADE;
-
--- Supprimer la colonne
-ALTER TABLE chatbot.faq DROP COLUMN embedding;
-ALTER TABLE chatbot.intention DROP COLUMN embedding;
-
-
--- Supprimer la colonne embedding
-ALTER TABLE chatbot.faq DROP COLUMN embedding;
-ALTER TABLE chatbot.intention DROP COLUMN embedding;
-
--- Recréer la colonne embedding avec 768 dimensions
-ALTER TABLE chatbot.faq ADD COLUMN embedding vector(768);
-ALTER TABLE chatbot.intention ADD COLUMN embedding vector(768);
-
-
-
-UPDATE chatbot.intention SET embedding = NULL;
-
--- Pour chatbot.faq
-UPDATE chatbot.faq
-SET embedding = NULL;
-
--- Pour chatbot.intention
-UPDATE chatbot.intention
-SET embedding = NULL;
 
 --Table intention
 
@@ -197,27 +119,13 @@ CREATE TABLE chatbot.intention(
     nom VARCHAR(100) UNIQUE NOT NULL,
     type_intent VARCHAR(50) NOT NULL,
     descriptions TEXT,
+    embedding vector(384),
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
-SELECT * FROM chatbot.intention;
+SELECT * FROM chatbot.faq;
 
---Insertion
-INSERT INTO chatbot.intention(nom, type_intent, descriptions)
-VALUES
-('salutation', 'social', 'Regroupe toutes les salutations et réponses types comme bonjour, salut, hi, hey, yo'),
-('au_revoir', 'social', 'Réponses aux messages de type au revoir ou bye'),
-('remerciement', 'social', 'Réponses aux messages de remerciements ou appréciations'),
-('validation', 'social', 'Réponses aux messages de configurations tel ok etc..'),
-
-('faq_buy', 'information', 'Questions fréquentes sur le service CTEXI Buy'),
-('faq_travel', 'information', 'Questions fréquentes sur le service CTEXI Travel'),
-('faq_academie', 'information', 'Questions fréquentes sur le service CTEXI Académie'),
-('faq_cargo', 'information', 'Questions fréquentes sur le service CTEXI cargo'),
-
-('suivi_colis', 'operation', 'Requêtes liées au suivi des colis par code ou compte client'),
-('taux_change', 'operation', 'Questions liées au taux de change ou simulation CTEXI Pay');
 
 
 SELECT * FROM chatbot.intention;
@@ -302,11 +210,103 @@ CREATE TABLE systems.notification(
 );
 
 
+----------------------------------------------Suppression et mise a jour----------------------------------
+
+
+-- Pour chatbot.faq
+UPDATE chatbot.faq SET embedding = NULL;
+
+-- Pour chatbot.intention
+UPDATE chatbot.intention SET embedding = NULL;
+
+
+
+DROP TABLE chatbot.faq CASCADE;
+DROP TABLE chatbot.intention CASCADE;
+
+
+-- Supprime toutes les lignes de la table FAQ
+DELETE FROM chatbot.faq;
+
+-- Supprime toutes les lignes de la table intention
+DELETE FROM chatbot.intention;
+
+
+SELECT * FROM chatbot.conversations;
+
+SET search_path TO chatbot, public;
+
+
+SELECT extname FROM pg_extension;
+
+
+
+
+
+
+--Ajout d'embeding dans intention
+SET search_path TO chatbot, public;
+
+
+
+-- Supprime toutes les lignes et réinitialise les séquences
+TRUNCATE TABLE chatbot.faq RESTART IDENTITY CASCADE;
+TRUNCATE TABLE chatbot.intention RESTART IDENTITY CASCADE;
+
+
+-- Supprimer la colonne embedding
+ALTER TABLE chatbot.faq DROP COLUMN embedding;
+ALTER TABLE chatbot.intention DROP COLUMN embedding;
+
+-- Recréer la colonne embedding avec 768 dimensions
+ALTER TABLE chatbot.faq ADD COLUMN embedding vector(768);
+ALTER TABLE chatbot.intention ADD COLUMN embedding vector(768);
+
+
+
+
+
+
+
+
+
+
+
+
 -------------------------------Insertion des donnees dans les tables faq----------------------------------
 
 -- =======================
 -- salutation (id_intent = 1)
 -- =======================
+
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+
+(1, 'salut frere', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+(1, 'salut boss', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+(1, 'slt', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+(1, 'cc', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+(1, 'coucou', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+(1, 'yo', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+
+(1, 'bonjour monsieur', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+(1, 'bonjour madame', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+(1, 'bonjour ctexi', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+
+(1, 'salut ca va', 'Bonjour 👋 Je vais très bien, merci ! Comment puis-je vous aider ?'),
+(1, 'bonjour ca va', 'Bonjour 👋 Je vais très bien, merci ! Comment puis-je vous aider ?'),
+(1, 'ca va', 'Je vais très bien 😊 Comment puis-je vous aider aujourd''hui ?'),
+
+(1, 'bonsoir ca va', 'Bonsoir 👋 Je vais très bien, merci ! Comment puis-je vous aider ?'),
+(1, 'hello ctexi', 'Hello 👋 Comment puis-je vous aider ?'),
+(1, 'hi there', 'Hello 👋 Comment puis-je vous aider ?'),
+
+(1, 'salutations', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+(1, 'bonjour equipe ctexi', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?'),
+(1, 'salut l equipe', 'Bonjour 👋 Comment puis-je vous aider aujourd''hui ?');
+
+
+
+
 INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 (1, 'salut', 'Bonjour ! Comment puis-je vous aider aujourd''hui ?'),
 (1, 'bonjour', 'Bonjour ! Que puis-je faire pour vous ?'),
@@ -415,25 +415,6 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 
 
 
-SELECT * FROM chatbot.faq;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 --FAQ
 
 INSERT INTO chatbot.faq (message_user, reponse_bot) VALUES
@@ -509,18 +490,177 @@ INSERT INTO chatbot.faq (message_user, reponse_bot) VALUES
 ('service client 24h ?','Le service client est disponible aux heures ouvrables. Vous pouvez laisser un message à tout moment.');
 
 
-SELECT * FROM ctexi_db;
 
+INSERT INTO chatbot.intention (nom, type_intent, descriptions)
+VALUES
 
---INSERT INTO chatbot.intentions (nom_intention, mots_cles, reponse) VALUES
---('salutation', ARRAY['bonjour','salut','hello','bonsoir','hey'], 
---'Bonjour 👋 Je suis votre assistant virtuel CTEXI-BOT. Comment puis-je vous aider aujourd’hui ?');
+(
+'salutation',
+'social',
+'
+salut
+salut mec
+coucou
+yo
+hello
+bonjour
+bonjour monsieur
+bonjour madame
+je vous salue
+permettez moi de vous adresser mes salutations
 
+'
+),
 
+(
+'au_revoir',
+'social',
+'
+au revoir
+bye
+a plus
+a bientot
+bonne journee
+bonne soiree
+je vous souhaite une excellente journee
+au plaisir de vous revoir
+a la prochaine occasion
+je vous remercie et vous dis au revoir
+'
+),
 
+(
+'remerciement',
+'social',
+'
+merci
+merci beaucoup
+merci mec
+grand merci
+thanks
+je vous remercie
+je vous remercie infiniment
+je vous suis reconnaissant
+mille mercis
+avec toute ma gratitude
+'
+),
 
-SELECT * FROM auth.users;
+(
+'validation',
+'social',
+'
+ok
+d accord
+cool
+ca marche
+c est bon
+tres bien
+cela me convient parfaitement
+c est parfait
+je confirme
+entendu c est valide
+'
+),
 
-SELECT * FROM chatbot.faq;
-SELECT * FROM chatbot.intention;
+(
+'faq_buy',
+'information',
+'
+je veux acheter en chine
+comment acheter en chine
+je veux commander un produit
+vous pouvez acheter pour moi
+c est quoi ctexi buy
+expliquez le fonctionnement du service buy
+quelles sont les etapes d achat
+comment passer commande
+quels sont les avantages de votre service d achat
+est ce que vous verifiez les produits avant expedition
+'
+),
 
+(
+'faq_travel',
+'information',
+'
+je veux voyager en chine
+comment obtenir un visa
+reservation billet avion
+reservation hotel chine
+aidez moi pour le visa
+quels sont les documents necessaires pour le visa
+quel est le delai d obtention du visa
+proposez vous une assistance aeroport
+comment modifier ma reservation
+je souhaite obtenir des informations pour voyager
+'
+),
+
+(
+'faq_academie',
+'information',
+'
+je veux suivre une formation
+formations proposees
+formation import export
+formation marketing digital
+coaching ctexi
+comment m inscrire a la formation
+formation en ligne disponible
+formation presentielle
+certificat de participation
+proposez vous un accompagnement pratique
+'
+),
+
+(
+'faq_cargo',
+'information',
+'
+quels sont vos services
+services ctexi
+expedition chine burkina
+transport marchandise
+frais de douane
+produits interdits importation
+retard de livraison
+information sur le transport
+ou se trouve le siege ctexi
+comment fonctionne le service cargo
+'
+),
+
+(
+'suivi_colis',
+'operation',
+'
+suivre mon colis
+ou est mon colis
+statut de ma commande
+code colis
+colis en transit
+comment suivre ma commande
+delai fret aerien
+delai fret maritime
+colis arrive au depot
+probleme avec mon colis
+'
+),
+
+(
+'taux_change',
+'operation',
+'
+taux de change
+taux rmb fcfa
+simulation paiement
+combien coute le transfert
+delai de transfert
+comment payer en chine
+transaction securisee
+preuve de paiement
+montant minimum transfert
+combien je dois payer
+'
+);
