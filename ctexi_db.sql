@@ -29,6 +29,8 @@ CREATE SCHEMA IF NOT EXISTS core;
 CREATE SCHEMA IF NOT EXISTS systems;
 
 
+
+
 ---------------------CREATION DES TABLES POUR LES SCHEMAS-------------------------------------------
 
 
@@ -53,16 +55,31 @@ CREATE TABLE auth.users(
 
 
 --Table agents
+DROP TABLE auth.agents CASCADE;
 
 CREATE TABLE auth.agents(
     id_agent SERIAL PRIMARY KEY,
     id_user INTEGER REFERENCES auth.users(id_user) ON DELETE CASCADE,
-    moyen_contact VARCHAR(100),
-    messages TEXT,
-    redirect_link VARCHAR(255),
+    services VARCHAR(100) NOT NULL, 
+    whatsapp VARCHAR(20) NOT NULL,
+    telephone VARCHAR(20) NOT NULL,
+    email VARCHAR(50) NOT NULL,
+    actif BOOLEAN DEFAULT TRUE,
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
 );
+
+----------------------------------NSERTION DES AGENTS EXEMPLE--------------------------------------
+
+TRUNCATE TABLE auth.agents RESTART IDENTITY;
+
+INSERT INTO auth.agents(id_user, services, whatsapp, telephone, email)
+VALUES
+(1, 'buy', '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 'cargo', '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 'academie', '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 'travel', '22674381094', '+22669090991', 'yakfismokonzi@gmail.com')
+
+
 
 
 
@@ -306,7 +323,7 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 
 
 
-
+clea
 INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 (1, 'salut', 'Bonjour ! Comment puis-je vous aider aujourd''hui ?'),
 (1, 'bonjour', 'Bonjour ! Que puis-je faire pour vous ?'),
@@ -330,9 +347,9 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 (3, 'merci', 'Avec plaisir ! N''hésitez pas si vous avez d''autres questions.'),
 (3, 'merci beaucoup', 'Je vous en prie !');
 
--- =======================
+-- ==========================
 -- validation (id_intent = 4)
--- =======================
+-- ==========================
 INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 (4, 'ok', 'Bien. Avez-vous d''autres questions ?'),
 (4, 'd''accord', 'Super !!! Si vous avez d''autres choses à me demander, n''hésitez pas !'),
