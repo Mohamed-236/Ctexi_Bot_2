@@ -60,7 +60,7 @@ DROP TABLE auth.agents CASCADE;
 CREATE TABLE auth.agents(
     id_agent SERIAL PRIMARY KEY,
     id_user INTEGER REFERENCES auth.users(id_user) ON DELETE CASCADE,
-    services VARCHAR(100) NOT NULL, 
+    id_intent INTEGER REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
     whatsapp VARCHAR(20) NOT NULL,
     telephone VARCHAR(20) NOT NULL,
     email VARCHAR(50) NOT NULL,
@@ -72,15 +72,24 @@ CREATE TABLE auth.agents(
 
 TRUNCATE TABLE auth.agents RESTART IDENTITY;
 
-INSERT INTO auth.agents(id_user, services, whatsapp, telephone, email)
+INSERT INTO auth.agents (id_user, id_intent, whatsapp, telephone, email)
 VALUES
-(1, 'buy', '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 'cargo', '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 'academie', '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 'travel', '22674381094', '+22669090991', 'yakfismokonzi@gmail.com')
+(1, 1, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 2, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 3, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 4, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 5, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 6, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 7, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 8, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 9, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 10, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com');
 
 
 
+
+
+SELECT * FROM auth.agents;
 
 
 -------------------------------------SCHEMA CHATBOT--------------------------------------------------------------
@@ -141,7 +150,7 @@ CREATE TABLE chatbot.intention(
 );
 
 
-SELECT * FROM chatbot.faq;
+SELECT * FROM chatbot.intention;
 
 
 

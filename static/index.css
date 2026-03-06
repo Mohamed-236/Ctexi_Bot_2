@@ -412,5 +412,46 @@ h1.left-align {
 }
 
 
+/*Contacter agent*/
 
+/* Conteneur des boutons agent */
+.agent-contact {
+  display: flex;
+  flex-direction: column; /* aligne verticalement */
+  gap: 10px; /* espace entre les boutons */
+  margin-top: 10px;
+  padding: 10px;
+}
 
+/* Texte info avant les boutons */
+.agent-contact > div:first-child {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+/* Styles communs pour les boutons */
+.agent-contact a {
+  text-decoration: none;
+  background-color: #5350c4; /* couleur de fond */
+  color: white; /* texte */
+  padding: 8px 15px; /* espace intérieur */
+  border-radius: 8px; /* coins arrondis */
+  text-align: center;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  display: inline-block;
+  max-width: 180px; /* largeur maximale */
+}
+
+/* Effet hover */
+.agent-contact a:hover {
+  background-color: #5350c4;
+  transform: scale(1.03);
+}
+
+/* Responsive: réduire largeur sur mobile */
+@media (max-width: 768px) {
+  .agent-contact a {
+    max-width: 100%;
+  }
+}

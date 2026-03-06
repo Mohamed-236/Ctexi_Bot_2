@@ -1,27 +1,21 @@
-from flask import Blueprint, jsonify, request, redirect
-from models.db_connect import get_db_connection
+from flask import Blueprint, jsonify, request
 from token_nize import token_required
 from models.sauvergarde import sauvegarder_conversation
-import psycopg2
 
-# Module NLP (traitement du langage naturel) personnalisé
+
+# Module NLP
 from nlp.faq_engine import trouver_meilleure_correspondance
-# - comprehension : fonction personnalisée pour analyser ou comprendre du texte
-
-
-
-# =====================================================================
-# ROUTE CHATBOT MESSAGE Api : http://localhost:5000/api/chatbot/message
-# ====================================================================
 
 faq_bp = Blueprint("faq", __name__, url_prefix="/api/faq")
 
 
-
 @faq_bp.route("/message", methods=["POST"])
-
 @token_required
 def chatbot_response():
+    """
+    Endpoint principal du chatbot.
+    Analyse le message, retourne réponse ou contact agent si nécessaire.
+    """
 
     data = request.get_json()
     message = data.get("message")
@@ -29,37 +23,31 @@ def chatbot_response():
     if not message:
         return jsonify({"status": "error", "message": "Message manquant"}), 400
 
-    # Récupération FAQ depuis base
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute("SELECT message_user, reponse_bot FROM chatbot.faq")
-    faq_data = cur.fetchall()
-    conn.close()
-
-    # Appel moteur NLP
+    # 🔹 Appel moteur NLP
     result = trouver_meilleure_correspondance(message)
 
-    # -------------------------------
-    # Sauvegarde automatique dans la DB
-    # -------------------------------
+    response_payload = {
+        "status": "success",
+        "user": request.user_name,
+        "reponse": result["reponse"],
+        "confidence_score": round(result["confiance"], 2),
+        "matched": result["trouve"]
+        
+    }
+
+    if result.get("agent"):
+      response_payload["agent"] = result["agent"]
+
+    # 🔹 Sauvegarde automatique dans la DB
     try:
         sauvegarder_conversation(
-            id_user=request.user_id,  
+            id_user=request.user_id,
             message_utilisateur=message,
             reponse_bot=result["reponse"],
-            intention=result.get('intention'),
+            intention=result.get("intention")
         )
     except Exception as e:
         print("Erreur lors de la sauvegarde:", e)
 
-
-
-
-    return jsonify({
-    "status": "success",
-    "user": request.user_name,
-    "reponse": result["reponse"],               
-    "confidence_score": round(result["confiance"], 2),  
-    "matched": result["trouve"]                
-}), 200
+    return jsonify(response_payload), 200
 
