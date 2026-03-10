@@ -1,6 +1,6 @@
 // ==========================================================
 // SÉLECTION DES ÉLÉMENTS DU DOM
-//e DOM est le lien entre JavaScript et ta page HTML, il te permet de contrôler ce que l’utilisateur voit et interagit avec.
+//Le DOM est le lien entre JavaScript et ta page HTML, il te permet de contrôler ce que l’utilisateur voit et interagit avec.
 // ==========================================================
 
 // Zone où les messages apparaissent
@@ -111,46 +111,6 @@ function typeText(element, text, delay = 20) {
   });
 }
 
-
-// ==========================================================
-// AFFICHER LES BOUTONS POUR CONTACTER UN AGENT
-// ==========================================================
-
-function displayAgentButtons(agent = { whatsapp: "", email: "", telephone: "" }) {
-  const contactDiv = document.createElement("div");
-  contactDiv.classList.add("agent-contact");
-
-  const infoText = document.createElement("div");
-  contactDiv.appendChild(infoText);
-
-  // Crée le bouton WhatsApp si disponible
-  if (agent.whatsapp) {
-    const btnWhats = document.createElement("a");
-    btnWhats.href = "https://wa.me/" + agent.whatsapp;
-    btnWhats.innerText = "💬 WhatsApp";
-    btnWhats.target = "_blank"; // ouvre dans un nouvel onglet
-    contactDiv.appendChild(btnWhats);
-  }
-
-  // Crée le bouton Email si disponible
-  if (agent.email) {
-    const btnMail = document.createElement("a");
-    btnMail.href = "mailto:" + agent.email;
-    btnMail.innerText = "📧 Email";
-    contactDiv.appendChild(btnMail);
-  }
-
-  // Crée le bouton Appel si disponible
-  if (agent.telephone) {
-    const btnCall = document.createElement("a");
-    btnCall.href = "tel:" + agent.telephone;
-    btnCall.innerText = "📞 Appeler";
-    contactDiv.appendChild(btnCall);
-  }
-
-  chatBody.appendChild(contactDiv);
-  chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
-}
 
 
 // ==========================================================
@@ -318,27 +278,98 @@ document.querySelectorAll(".quick-btn").forEach(btn => {
 // FONCTION CONTACT AGENT
 // ==========================================================
 
-function handleContactAgent() {
-  // Message utilisateur
+
+
+// ==========================================================
+// FONCTION CONTACT AGENT
+// ==========================================================
+
+async function handleContactAgent() {
+
+  // 1️⃣ Message utilisateur
   const userMessageDiv = createMessageElement(
     `<div class="message-text">Je souhaite contacter un agent.</div>`,
     "user-message"
   );
   chatBody.appendChild(userMessageDiv);
-  chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
 
-  // Message bot vide pour afficher le texte progressivement
+  // 2️⃣ Message bot vide pour affichage progressif
   const botDiv = createMessageElement(`<div class="message-text"></div>`, "bot-message");
   chatBody.appendChild(botDiv);
 
-  // Affichage texte "Veuillez choisir un moyen de contact"
-  typeText(botDiv.querySelector(".message-text"), "Veuillez choisir un moyen de contact :")
-    .then(() => {
-      const agentInfo = {
-        whatsapp: "22674381094",
-        email: "yakfismokonzi@gmail.com",
-        telephone: "+22674381094"
-      };
-      displayAgentButtons(agentInfo); // Affiche boutons WhatsApp, Email et Téléphone
+  await typeText(botDiv.querySelector(".message-text"), "Bien recu!!! Pour contacter un  agent, veuillez choisir une option afin que je puisse vous mettre en contacte avec nos agents.");
+
+  try {
+    // 3️⃣ Récupération du token depuis localStorage
+    const token = localStorage.getItem("token");
+
+    // 4️⃣ Vérification que le token existe
+    if (!token) {
+      typeText(botDiv.querySelector(".message-text"), "Vous devez être connecté pour contacter un agent.");
+      return;
+    }
+
+    // 5️⃣ Appel API pour récupérer les informations de l'agent
+    const response = await fetch("http://localhost:5000/api/faq/contact-agent", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
     });
+
+    const data = await response.json();
+    console.log("API contact-agent:", data);
+
+    // 6️⃣ Vérification du statut
+    if (data.status === "succes" || data.status === "success") {
+      displayAgentButtons(data.agent);
+    } else {
+      typeText(botDiv.querySelector(".message-text"), "Aucun agent disponible pour le moment.");
+      console.error("Erreur API contact-agent :", data);
+    }
+
+  } catch (error) {
+    console.error("Erreur fetch contact-agent :", error);
+    typeText(botDiv.querySelector(".message-text"), "Impossible de récupérer les informations de contact.");
+  }
+}
+
+
+// ==========================================================
+// AFFICHER LES BOUTONS POUR CONTACTER UN AGENT
+// ==========================================================
+
+function displayAgentButtons(agent = { whatsapp: "", email: "", telephone: "" }) {
+  const contactDiv = document.createElement("div");
+  contactDiv.classList.add("agent-contact");
+
+
+
+  // Bouton WhatsApp
+  if (agent.whatsapp) {
+    const btnWhats = document.createElement("a");
+    btnWhats.href = "https://wa.me/" + agent.whatsapp;
+    btnWhats.innerText = "💬 WhatsApp";
+    btnWhats.target = "_blank";
+    contactDiv.appendChild(btnWhats);
+  }
+
+  // Bouton Email
+  if (agent.email) {
+    const btnMail = document.createElement("a");
+    btnMail.href = "mailto:" + agent.email;
+    btnMail.innerText = "📧 Email";
+    contactDiv.appendChild(btnMail);
+  }
+
+  // Bouton Appel
+  if (agent.telephone) {
+    const btnCall = document.createElement("a");
+    btnCall.href = "tel:" + agent.telephone;
+    btnCall.innerText = "📞 Appeler";
+    contactDiv.appendChild(btnCall);
+  }
+
+  chatBody.appendChild(contactDiv);
+  chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
 }

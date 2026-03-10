@@ -286,9 +286,11 @@ def trouver_meilleure_correspondance(message_utilisateur):
     # Si aucune intention n'est détectée avec suffisamment de confiance
     if not intention:
         return {
+            "type":"fallback",
             "reponse": "Je ne comprends pas bien votre demande. Pouvez-vous reformuler ?",
             "confiance": float(score_intention),
-            "trouve": False
+            "trouve": False,
+            "agent":agent
         }
 
     # Recherche de la FAQ la plus appropriée
@@ -300,6 +302,7 @@ def trouver_meilleure_correspondance(message_utilisateur):
     # Si une FAQ correspondante est trouvée
     if faq:
         return {
+            "type":"faq",     # utilise pour le frontend
             "reponse": faq["reponse_bot"],
             "confiance": float(score_faq),
             "trouve": True,
@@ -311,7 +314,8 @@ def trouver_meilleure_correspondance(message_utilisateur):
 
     if agent:
         return {
-            "reponse": "Je comprends votre demande mais je n'ai pas encore la réponse exacte. Vous pouvez contacter un agent CTEXI.",
+            "type":"agent",
+            "reponse": "Je comprends votre demande mais je n'ai pas encore de donnees suffisantes pour vous repondre. Merci de contacter un agent CTEXI par les moyens suivants afin d'avoir une reponse claire a votre preoccupation.",
             "confiance": float(score_intention),
             "trouve": False,
             "intention": intention["nom"],
@@ -321,9 +325,13 @@ def trouver_meilleure_correspondance(message_utilisateur):
                 "email": agent["email"]
             }
         }
+    
+
+#
 
     # Aucun agent trouvé → message générique
     return {
+        "type":"fallback2",
         "reponse": "Je ne trouve pas de réponse et aucun agent n'est disponible pour le moment.",
         "confiance": float(score_intention),
         "trouve": False,
