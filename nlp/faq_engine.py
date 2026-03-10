@@ -260,18 +260,19 @@ def rechercher_faq(embedding_message, id_intention):
 # ==========================================================
 # MOTEUR PRINCIPAL
 # ==========================================================
-
 def trouver_meilleure_correspondance(message_utilisateur):
     """
     Fonction principale pour trouver la meilleure réponse à un message utilisateur.
     - Détecte l'intention
     - Cherche la FAQ correspondante
-    - Si aucune FAQ, propose de contacter un agent
+    - Si l'intention est 'contact_agent', propose directement les boutons
+    - Si aucune FAQ et agent dispo, propose contact agent
+    - Sinon message fallback
     """
 
     logging.info(f"Message utilisateur : {message_utilisateur}")
     
-    # Encodage du message utilisateur en vecteur (embedding) UNE SEULE FOIS
+    # Encodage du message utilisateur en vecteur (embedding)
     embedding_message = modele_embedding.encode(
         [message_utilisateur],
         normalize_embeddings=True
@@ -283,39 +284,86 @@ def trouver_meilleure_correspondance(message_utilisateur):
         embedding_message
     )
 
-    # Si aucune intention n'est détectée avec suffisamment de confiance
+    # Si aucune intention détectée
     if not intention:
         return {
             "type":"fallback",
             "reponse": "Je ne comprends pas bien votre demande. Pouvez-vous reformuler ?",
             "confiance": float(score_intention),
-            "trouve": False,
-            "agent":agent
+            "trouve": False
         }
 
-    # Recherche de la FAQ la plus appropriée
-    faq, score_faq = rechercher_faq(
-        embedding_message,
-        intention["id_intent"]
-    )
+    # ===========================
+    # LOGIQUE CONTACT_AGENT
+    # ===========================
+    if intention["nom"] == "contact_agent":
+        agent = recuperer_agent_par_intention(intention["id_intent"])
+        if agent:
+            return {
+                "type": "agent",
+                "reponse": "Je peux vous mettre en relation avec un agent. Choisissez un moyen de contact ci-dessous.",
+                "confiance": float(score_intention),
+                "trouve": True,
+                "intention": intention["nom"],
+                "agent": {
+                    "whatsapp": agent["whatsapp"],
+                    "telephone": agent["telephone"],
+                    "email": agent["email"]
+                }
+            }
+        else:
+            return {
+                "type": "fallback2",
+                "reponse": "Aucun agent n'est disponible pour le moment.",
+                "confiance": float(score_intention),
+                "trouve": False,
+                "intention": intention["nom"]
+            }
 
-    # Si une FAQ correspondante est trouvée
+    # ===========================
+    # LOGIQUE SERVICE
+    # ===========================
+    if intention["nom"] == "service":
+        # Cherche FAQ associée aux services
+        faq, score_faq = rechercher_faq(embedding_message, intention["id_intent"])
+        if faq:
+            return {
+                "type": "service",
+                "reponse": faq["reponse_bot"],  # ou tu peux faire un fetch direct depuis ta table service si tu veux
+                "confiance": float(score_faq),
+                "trouve": True,
+                "intention": intention["nom"]
+            }
+        else:
+            return {
+                "type": "service",
+                "reponse": "Voici la liste de nos services disponibles : ...",
+                "confiance": float(score_intention),
+                "trouve": False,
+                "intention": intention["nom"]
+            }
+
+    # ===========================
+    # LOGIQUE FAQ (pour les autres intentions)
+    # ===========================
+    faq, score_faq = rechercher_faq(embedding_message, intention["id_intent"])
     if faq:
         return {
-            "type":"faq",     # utilise pour le frontend
+            "type":"faq",
             "reponse": faq["reponse_bot"],
             "confiance": float(score_faq),
             "trouve": True,
             "intention": intention["nom"]
         }
-    
-    # Aucun FAQ → proposer un agent correspondant à l'intention
-    agent = recuperer_agent_par_intention(intention["id_intent"])
 
+    # ===========================
+    # LOGIQUE AGENT (si aucune FAQ trouvée)
+    # ===========================
+    agent = recuperer_agent_par_intention(intention["id_intent"])
     if agent:
         return {
             "type":"agent",
-            "reponse": "Je comprends votre demande mais je n'ai pas encore de donnees suffisantes pour vous repondre. Merci de contacter un agent CTEXI par les moyens suivants afin d'avoir une reponse claire a votre preoccupation.",
+            "reponse": "Je ne connais pas encore la réponse exacte. Vous pouvez contacter un agent ci-dessous.",
             "confiance": float(score_intention),
             "trouve": False,
             "intention": intention["nom"],
@@ -325,11 +373,10 @@ def trouver_meilleure_correspondance(message_utilisateur):
                 "email": agent["email"]
             }
         }
-    
 
-#
-
-    # Aucun agent trouvé → message générique
+    # ===========================
+    # FALLBACK GENERIQUE
+    # ===========================
     return {
         "type":"fallback2",
         "reponse": "Je ne trouve pas de réponse et aucun agent n'est disponible pour le moment.",
@@ -337,3 +384,6 @@ def trouver_meilleure_correspondance(message_utilisateur):
         "trouve": False,
         "intention": intention["nom"]
     }
+
+
+

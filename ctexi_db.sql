@@ -4,8 +4,6 @@
 -----------------------------------CREATION DES SCHEMA---------------------------------------------------
 
 
-
-
 -- installation de  pgvector(extension de postgres) pour la creation des embedding
 CREATE EXTENSION IF NOT EXISTS vector;
 
@@ -85,8 +83,10 @@ VALUES
 (1, 9, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
 (1, 10, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com');
 
-
-
+INSERT INTO auth.agents (id_user, id_intent, whatsapp, telephone, email)
+VALUES
+(1, 11, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
+(1, 12, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com');
 
 
 SELECT * FROM auth.agents;
@@ -104,6 +104,10 @@ CREATE TABLE chatbot.faq(
     embedding vector(384),
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
+
 
 
 
@@ -137,7 +141,6 @@ CREATE TABLE chatbot.sessions(
 
 
 
-
 --Table intention
 
 CREATE TABLE chatbot.intention(
@@ -150,7 +153,7 @@ CREATE TABLE chatbot.intention(
 );
 
 
-SELECT * FROM chatbot.intention;
+SELECT * FROM chatbot.faq;
 
 
 
@@ -169,6 +172,7 @@ CREATE TABLE chatbot.reponse_intention(
 
 -------------------------------------SCHEMA CORE--------------------------------------------------------------
 
+
 --Table services
 CREATE TABLE core.service(
     id_service SERIAL PRIMARY KEY,
@@ -176,6 +180,7 @@ CREATE TABLE core.service(
     descriptions TEXT,
     menu JSONB,
     icone VARCHAR(255)
+
 );
 
 
@@ -236,7 +241,7 @@ CREATE TABLE systems.notification(
 );
 
 
-----------------------------------------------Suppression et mise a jour----------------------------------
+----------------------------------------------Suppression et mise a jour-------------------------------------------
 
 
 -- Pour chatbot.faq
@@ -266,7 +271,7 @@ SET search_path TO chatbot, public;
 SELECT extname FROM pg_extension;
 
 
-
+SELECT * FROM auth.agents;
 
 
 
@@ -284,9 +289,6 @@ TRUNCATE TABLE chatbot.intention RESTART IDENTITY CASCADE;
 ALTER TABLE chatbot.faq DROP COLUMN embedding;
 ALTER TABLE chatbot.intention DROP COLUMN embedding;
 
--- Recréer la colonne embedding avec 768 dimensions
-ALTER TABLE chatbot.faq ADD COLUMN embedding vector(768);
-ALTER TABLE chatbot.intention ADD COLUMN embedding vector(768);
 
 
 
@@ -442,80 +444,20 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 
 
 --FAQ
-
-INSERT INTO chatbot.faq (message_user, reponse_bot) VALUES
-('salut','Bonjour ! Comment puis-je vous aider aujourd''hui ?'),
-('bonjour','Bonjour ! Que puis-je faire pour vous ?'),
-('bonsoir','Bonsoir ! Comment puis-je vous aider ?'),
-('merci','Avec plaisir ! N''hésitez pas si vous avez d''autres questions.'),
-('merci beaucoup','Je vous en prie !'),
-('au revoir','Au revoir ! À bientôt.'),
-('a+','À la prochaine !'),
-('ça va ?','Tout va bien, merci ! Et vous ?'),
-('comment ça va ?','Je vais bien, merci ! Que puis-je faire pour vous ?'),
-
-('cmt suiv mon colis ?','Connectez-vous avec votre numéro de téléphone pour voir tous vos colis et leurs statuts.'),
-('je veu annuler ma cmd','L''annulation est possible uniquement si la commande n''a pas encore été payée au fournisseur.'),
-('combien le transfert','Un transfert prend généralement entre 24 et 72 heures selon la banque du bénéficiaire.'),
-('visa chine cmt faire ?','CTEXI Travel vous guide pour obtenir le visa chinois. Nous fournissons la liste des documents requis, les délais et vous aidons à remplir votre demande.'),
-
-('comment creer un compte ?','Cliquez sur Inscription, remplissez vos informations personnelles et validez votre compte.'),
-('je veux m inscrire','Pour créer un compte, cliquez sur Inscription et suivez les étapes.'),
-('j ai oublié mon mot de passe','Cliquez sur Mot de passe oublié et suivez les instructions pour réinitialiser votre accès.'),
-('comment supprimer mon compte','Contactez le service client pour faire une demande de suppression de compte.'),
-('comment modifier mes infos','Accédez à votre profil dans l''application et mettez à jour vos informations.'),
-('mon compte est sécurisé ?','Oui, toutes les données et informations personnelles sont protégées et sécurisées.'),
-('je veux changer mon mot de passe','Allez dans votre profil et sélectionnez Modifier le mot de passe.'),
-
-('comment fonctionne ctexi buy ?','CTEXI Buy vous aide à acheter des produits en Chine. Vous nous fournissez les caractéristiques du produit, nous recherchons les fournisseurs fiables, achetons, vérifions la qualité, conditionnons et expédions le produit vers vous.'),
-('avantages ctexi buy ?','Les avantages incluent la sécurité, notre expertise en Chine, la réduction des risques et l''assurance de conformité avec vos demandes.'),
-('combien de temps pour une commande ?','Le délai dépend du fournisseur et du mode de transport choisi. En moyenne : 3 à 7 jours pour l''achat et vérification, puis 7 à 45 jours pour la livraison selon transport aérien ou maritime.'),
-('je veux annuler ma commande','L''annulation est possible uniquement si la commande n''a pas encore été payée au fournisseur.'),
-('verification avant expédition possible ?','Oui, nous effectuons un contrôle qualité avant l''expédition pour vérifier la conformité des produits avec votre commande.'),
-('produit non conforme que faire ?','Contactez immédiatement notre service client avec photos et description du problème. Nous analyserons la situation avec le fournisseur.'),
-('assurance marchandise ?','Oui, une assurance transport peut être ajoutée pour couvrir les pertes ou dommages pendant l''expédition.'),
-
-('comment suivre mon colis ?','Connectez-vous avec votre numéro de téléphone. Tous les colis enregistrés sous ce numéro apparaissent avec leur statut actuel, mode de transport et dernière mise à jour.'),
-('que signifie le statut en transit ?','Cela signifie que votre colis a quitté l''entrepôt et est en route vers le Burkina Faso.'),
-('statut arrivé au dépôt ?','Votre colis est arrivé dans notre entrepôt local et est prêt pour retrait ou livraison.'),
-('code colis invalide','Vérifiez le code et assurez-vous qu''il correspond à un colis enregistré. En cas de problème, contactez notre service client via WhatsApp ou mail.'),
-('plusieurs colis suivi ?','Vous pouvez suivre plusieurs colis en même temps, aucun nombre limité.'),
-('changement numero telephone','Vous pouvez ré-ajouter le code, le colis sera automatiquement rattaché à votre compte.'),
-('delais fret aerien ?','Le fret aérien prend généralement entre 7 et 15 jours selon la destination.'),
-('delais fret maritime ?','Le fret maritime prend en moyenne entre 30 et 45 jours selon le port de départ.'),
-('frais transport calcul ?','Les frais sont calculés selon le poids volumétrique, le mode de transport et la destination finale.'),
-('colis endommagé que faire ?','Signalez immédiatement le dommage avec preuves visuelles. Si une assurance a été souscrite, une procédure d''indemnisation sera lancée.'),
-
-('comment fonctionne ctexi pay ?','CTEXI Pay permet de connaître le taux de change du jour et de déclencher une demande de paiement via WhatsApp.'),
-('taux change du jour','Le taux indicatif du jour est affiché dans l''application CTEXI Pay. Exemple : 1 RMB = 85 FCFA.'),
-('simulation paiement','Entrez le montant en RMB, l''application calcule automatiquement le total à payer en FCFA.'),
-('demande paiement','Cliquez sur "Valider et contacter CTEXI Pay" pour envoyer un message WhatsApp pré-rempli avec vos informations.'),
-('transaction securisee ?','Oui, toutes les transactions sont traitées de manière sécurisée et confidentielle.'),
-('preuve paiement ?','Oui, une confirmation ou preuve de transaction est fournie après chaque paiement effectué.'),
-('montant minimum transfert ?','Un montant minimum peut être requis selon la réglementation en vigueur.'),
-('delai transfert ?','Un transfert prend généralement entre 24 et 72 heures selon la banque du bénéficiaire.'),
-
-('comment obtenir visa chine ?','CTEXI Travel vous guide pour obtenir le visa chinois. Nous fournissons la liste des documents requis, les délais et vous aidons à remplir votre demande.'),
-('reservation billet ou hotel ?','Oui, le service permet la réservation de billets d''avion et d''hôtels en Chine. Contactez directement un agent CTEXI.'),
-('documents visa ?','Passeport valide, photos, formulaire rempli, preuve d''hébergement et billet aller-retour.'),
-('delais obtention visa ?','Le délai varie selon le type de visa, généralement entre 5 et 15 jours ouvrables.'),
-('assistance aeroport ?','Oui, une assistance peut être organisée selon votre demande.'),
-('modification reservation ?','Les modifications dépendent des conditions du billet ou de l''hôtel réservé.'),
-
-('formations proposees ?','CTEXI Académie propose des formations sur les achats en ligne en Chine, l''import-export, le marketing digital et du coaching.'),
-('formation en ligne ou presentiel ?','Les formations peuvent être en ligne ou en présentiel selon le programme choisi.'),
-('comment m inscrire ?','Cliquez sur "S''inscrire / Demander infos" et contactez-nous via WhatsApp, email ou formulaire pour réserver votre place.'),
-('certificat formation ?','Oui, un certificat de participation peut être délivré à la fin de la formation.'),
-('accompagnement pratique ?','Certaines formations incluent des études de cas et un accompagnement personnalisé.'),
-
-('quels services ctexi ?','CTEXI propose Buy (achat en Chine), Cargo (expédition), Pay (transfert d''argent), Travel (voyage) et Académie (formation et coaching).'),
-('siege ctexi ?','Le siège est situé au Burkina Faso avec une représentation en Chine.'),
-('produits interdits import ?','Les produits interdits incluent les marchandises dangereuses, contrefaçons et articles réglementés selon la législation locale.'),
-('frais douane ?','Oui, des droits de douane peuvent s''appliquer selon la nature et la valeur des marchandises.'),
-('responsable retard ?','Les délais peuvent être affectés par des facteurs externes (douane, transport). Nous faisons le maximum pour minimiser les retards.'),
-('service client 24h ?','Le service client est disponible aux heures ouvrables. Vous pouvez laisser un message à tout moment.');
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(11, 'je veux contacter un agent', 'Je peux vous mettre en relation avec un agent. Veuillez choisir un moyen de contact ci-dessous.'),
+(11, 'puis-je parler à un agent ?', 'Bien sûr ! Un agent est disponible. Choisissez le moyen de contact : WhatsApp, Email ou Appel.'),
+(11, 'j’ai besoin d’aide humaine', 'Pas de problème, un agent est là pour vous aider. Voici les options pour le contacter.'),
+(11, 'aide', 'Si vous souhaitez de l’aide personnalisée, vous pouvez contacter un agent via les boutons ci-dessous.'),
+(11, 'assistance', 'Je vous propose de contacter un agent pour mieux vous assister. Cliquez sur un bouton ci-dessous.');
 
 
+INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
+(12, 'quels sont vos services', 'Voici nos services disponibles : [liste des services]. Choisissez un service pour voir tous les détails.'),
+(12, 'présentez vos services', 'Nous proposons plusieurs services adaptés à vos besoins. Veuillez sélectionner un service pour plus d’informations.'),
+(12, 'je veux en savoir plus sur vos services', 'Bien sûr ! Voici nos services. Cliquez sur celui qui vous intéresse pour en savoir plus.'),
+(12, 'détails des services', 'Nous avons plusieurs services. Sélectionnez un service pour découvrir toutes les informations détaillées.'),
+(12, 'vos offres', 'Voici un aperçu de nos services. Pour plus de détails sur chaque service, choisissez celui qui vous intéresse.');
 
 INSERT INTO chatbot.intention (nom, type_intent, descriptions)
 VALUES
@@ -690,3 +632,44 @@ montant minimum transfert
 combien je dois payer
 '
 );
+
+
+
+-- ==========================================================
+-- Intention : contact_agent
+-- ==========================================================
+INSERT INTO chatbot.intention (nom, type_intent, descriptions)
+VALUES
+(
+  'contact_agent',
+  'agent',
+  '
+  je veux contacter un agent
+  je souhaite parler à un agent
+  puis-je avoir un agent
+  j’ai besoin d’aide d’un agent
+  contactez un agent
+  support
+  assistance
+  '
+);
+
+-- ==========================================================
+-- Intention : service_info
+-- ==========================================================
+INSERT INTO chatbot.intention (nom, type_intent, descriptions)
+VALUES
+(
+  'service_info',
+  'service',
+  '
+  quels services proposez-vous
+  je veux connaître vos services
+  présente-moi vos services
+  liste des services
+  informations sur vos services
+  '
+);
+
+
+SELECT * FROM chatbot.intention;
