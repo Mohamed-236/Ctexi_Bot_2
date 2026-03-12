@@ -108,9 +108,6 @@ CREATE TABLE chatbot.faq(
 
 
 
-
-
-
 --Table convesation
 CREATE TABLE chatbot.conversations(
     id_conv SERIAL PRIMARY KEY,
@@ -176,12 +173,96 @@ CREATE TABLE chatbot.reponse_intention(
 --Table services
 CREATE TABLE core.service(
     id_service SERIAL PRIMARY KEY,
-    nom_service VARCHAR (100),
+    nom_service VARCHAR (255),
     descriptions TEXT,
     menu JSONB,
     icone VARCHAR(255)
 
 );
+
+
+INSERT INTO core.service (nom_service, descriptions, menu, icone) VALUES
+
+(
+'CTEXI Buy',
+'CTEXI Buy est un service qui vous permet d’acheter facilement des produits à l’international (Chine, Turquie, Europe, etc.) même si vous ne maîtrisez pas les procédures d’importation.',
+'{
+ "fonctionnalites": [
+   "Recherche de fournisseurs fiables",
+   "Négociation avec les fournisseurs",
+   "Achat sécurisé des produits",
+   "Suivi de commande"
+ ],
+ "avantages": [
+   "Réduction des risques d’arnaque",
+   "Gain de temps",
+   "Accompagnement par des experts"
+ ]
+}',
+'/icons/buy.png'
+),
+
+(
+'CTEXI Travel',
+'CTEXI Travel accompagne les entrepreneurs et particuliers dans leurs voyages professionnels à l’étranger afin de trouver des fournisseurs et développer leur business.',
+'{
+ "services": [
+   "Organisation de voyages d’affaires",
+   "Assistance pour visa",
+   "Réservation d’hôtels",
+   "Interprétation et accompagnement"
+ ],
+ "destinations": [
+   "Chine",
+   "Turquie",
+   "Dubaï",
+   "Europe"
+ ]
+}',
+'/icons/travel.png'
+),
+
+(
+'CTEXI Académie',
+'CTEXI Académie est une plateforme de formation dédiée au commerce international, à l’import-export et au développement d’affaires.',
+'{
+ "formations": [
+   "Formation import-export",
+   "Recherche de fournisseurs internationaux",
+   "Stratégies de négociation commerciale",
+   "Gestion logistique internationale"
+ ],
+ "avantages": [
+   "Formateurs expérimentés",
+   "Formation pratique",
+   "Opportunités de networking"
+ ]
+}',
+'/icons/academie.png'
+),
+
+(
+'CTEXI Cargo',
+'CTEXI Cargo est un service de transport et logistique qui permet d’expédier vos marchandises depuis l’étranger vers votre pays en toute sécurité.',
+'{
+ "services": [
+   "Transport maritime",
+   "Transport aérien",
+   "Groupage de marchandises",
+   "Suivi de colis"
+ ],
+ "avantages": [
+   "Livraison rapide",
+   "Sécurité des marchandises",
+   "Tarifs compétitifs"
+ ]
+}',
+'/icons/cargo.png'
+);
+
+SELECT * FROM core.service;
+
+
 
 
 --Table formations
@@ -192,6 +273,7 @@ CREATE TABLE core.formation(
     date_debut DATE,
     date_fin DATE
 );
+
 
 
 --table colis

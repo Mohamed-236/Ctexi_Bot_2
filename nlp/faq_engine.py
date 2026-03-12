@@ -13,6 +13,7 @@ from models.db_connect import get_db_connection
 
 # Fonction pour récupérer un agent selon l'intention détectée
 from models.contact_agent import recuperer_agent_par_intention
+from models.service import recuperer_service_par_intention
 
 # NumPy : pour manipuler des vecteurs et tableaux numériques
 import numpy as np
@@ -323,25 +324,21 @@ def trouver_meilleure_correspondance(message_utilisateur):
     # ===========================
     # LOGIQUE SERVICE
     # ===========================
-    if intention["nom"] == "service":
-        # Cherche FAQ associée aux services
-        faq, score_faq = rechercher_faq(embedding_message, intention["id_intent"])
-        if faq:
-            return {
-                "type": "service",
-                "reponse": faq["reponse_bot"],  # ou tu peux faire un fetch direct depuis ta table service si tu veux
-                "confiance": float(score_faq),
-                "trouve": True,
-                "intention": intention["nom"]
-            }
-        else:
-            return {
-                "type": "service",
-                "reponse": "Voici la liste de nos services disponibles : ...",
-                "confiance": float(score_intention),
-                "trouve": False,
-                "intention": intention["nom"]
-            }
+    if intention["nom"] == "service_info":
+
+        services = recuperer_service_par_intention()
+
+        return {
+            "type": "service",
+            "reponse": "Voici nos services disponible",
+            "confiance": float(score_intention),
+            "services" : services,
+            "trouve": True,
+            "intention": intention["nom"]
+        }
+    
+    
+        
 
     # ===========================
     # LOGIQUE FAQ (pour les autres intentions)
@@ -373,6 +370,7 @@ def trouver_meilleure_correspondance(message_utilisateur):
                 "email": agent["email"]
             }
         }
+    
 
     # ===========================
     # FALLBACK GENERIQUE

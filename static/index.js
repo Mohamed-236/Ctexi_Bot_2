@@ -3,127 +3,165 @@
 //Le DOM est le lien entre JavaScript et ta page HTML, il te permet de contrôler ce que l’utilisateur voit et interagit avec.
 // ==========================================================
 
-// Zone où les messages apparaissent
+
+// ==========================================================
+// SÉLECTION DES ÉLÉMENTS DU DOM
+// ==========================================================
 const chatBody = document.querySelector(".chat-body");
-
-// Zone de saisie du message utilisateur
 const messageInput = document.querySelector(".message-input");
-
-// Bouton pour envoyer le message
 const sendMessageButton = document.querySelector("#send-message");
-
-// Input pour fichiers (non utilisé dans ce code pour l'instant)
 const fileInput = document.querySelector("#file-input");
-
-// Bouton pour ouvrir le chatbot
 const chatbotToggler = document.querySelector("#chatbot-toggler");
-
-// Bouton pour fermer le chatbot
 const closeChatbot = document.querySelector("#close-chatbot");
-
-// Formulaire de login
 const loginForm = document.querySelector("#login-form");
-
-// Inputs du formulaire login
 const loginEmail = document.querySelector("#email");
 const loginPassword = document.querySelector("#mdp");
 
-// Stockage temporaire du message utilisateur
-const userData = {
-  message: null
-};
-
-// Hauteur initiale du textarea pour le redimensionnement automatique
+const userData = { message: null };
 const initialInputHeight = messageInput.scrollHeight;
-
 
 // ==========================================================
 // LOGIN ET STOCKAGE DU TOKEN
 // ==========================================================
-
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    // Récupérer et nettoyer les valeurs saisies
     const email = loginEmail.value.trim();
     const mdp = loginPassword.value.trim();
-
     if (!email || !mdp) return alert("Veuillez remplir tous les champs.");
-
     try {
-      // Appel API POST pour authentification
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, mdp })
       });
-
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Erreur lors de la connexion");
-
-      // Stocker le token et le nom de l'utilisateur dans localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("user_name", data.user?.nom || "");
-
-      // Redirection vers la page d'accueil
       window.location.href = "/";
-    } catch (err) {
-      console.error(err);
-      alert(err.message);
-    }
+    } catch (err) { console.error(err); alert(err.message); }
   });
 }
 
-
 // ==========================================================
-// CRÉER UN ÉLÉMENT MESSAGE (user ou bot)
+// CRÉER UN ÉLÉMENT MESSAGE
 // ==========================================================
-
 const createMessageElement = (content, ...classes) => {
   const div = document.createElement("div");
-  div.classList.add("message", ...classes); // ajouter les classes CSS
-  div.innerHTML = content; // insérer le texte HTML
+  div.classList.add("message", ...classes);
+  div.innerHTML = content;
   return div;
 };
 
-
 // ==========================================================
-// AFFICHAGE DU TEXTE PROGRESSIVEMENT (EFFET "TYPING")
+// EFFET "TYPING"
 // ==========================================================
-
 function typeText(element, text, delay = 20) {
   return new Promise((resolve) => {
     let i = 0;
     element.innerHTML = "";
-
-    // Ajouter une lettre toutes les `delay` millisecondes
     const interval = setInterval(() => {
       element.innerHTML += text[i];
       i++;
-      if (i >= text.length) {
-        clearInterval(interval);
-        resolve(); // fin du typing
-      }
-      // Scroll automatique vers le bas
+      if (i >= text.length) { clearInterval(interval); resolve(); }
       chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
     }, delay);
   });
 }
 
+// ==========================================================
+// AFFICHAGE DES BOUTONS SERVICES
+// ==========================================================
+function displayServiceButtons(services = []) {
+  const serviceDiv = document.createElement("div");
+  serviceDiv.classList.add("service-buttons");
+
+  services.forEach(s => {
+    const btn = document.createElement("button");
+    btn.innerText = s.nom_service;
+    btn.dataset.id = s.id_service;
+    btn.addEventListener("click", () => fetchServiceDetails(s.id_service));
+    serviceDiv.appendChild(btn);
+  });
+
+  chatBody.appendChild(serviceDiv);
+  chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
+}
 
 
 // ==========================================================
-// GÉNÉRER LA RÉPONSE DU BOT VIA L'API FLASK
+// FORMATAGE DU MENU JSONB
 // ==========================================================
+function formatMenu(menu) {
 
+  if (!menu) return "";
+
+  let html = "";
+
+  // Fonctionnalités
+  if (menu.fonctionnalites) {
+    html += "<strong>Fonctionnalités :</strong><ul>";
+
+    menu.fonctionnalites.forEach(item => {
+      html += `<li>${item}</li>`;
+    });
+
+    html += "</ul>";
+  }
+
+  // Avantages
+  if (menu.avantages) {
+    html += "<strong>Avantages :</strong><ul>";
+
+    menu.avantages.forEach(item => {
+      html += `<li>${item}</li>`;
+    });
+
+    html += "</ul>";
+  }
+
+  return html;
+}
+
+
+// ==========================================================
+// RÉCUPÉRER LES DÉTAILS D’UN SERVICE
+// ==========================================================
+async function fetchServiceDetails(idService) {
+  const token = localStorage.getItem("token");
+  try {
+    const response = await fetch(`/api/list/service/${idService}`, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await response.json();
+
+    const serviceMessage = createMessageElement(
+      `<div class="message-text">
+         <strong>${data.nom_service}</strong><br/>
+         ${data.descriptions}<br/>
+         ${formatMenu(data.menu)}
+       </div>`,
+      "bot-message"
+    );
+    chatBody.appendChild(serviceMessage);
+    chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
+
+  } catch (err) {
+    console.error(err);
+    console.log("SERVICES :", data.services);
+
+  }
+}
+
+// ==========================================================
+// GÉNÉRER LA RÉPONSE DU BOT
+// ==========================================================
 const generateBotResponse = async (incomingMessageDiv) => {
   const messageElement = incomingMessageDiv.querySelector(".message-text");
-
   try {
     const token = localStorage.getItem("token");
-
-    // Si l'utilisateur n'est pas connecté
     if (!token) {
       messageElement.innerText = "Vous devez être connecté pour utiliser le chatbot.";
       messageElement.style.color = "#ff0000";
@@ -131,13 +169,9 @@ const generateBotResponse = async (incomingMessageDiv) => {
       return;
     }
 
-    // Appel API POST pour obtenir la réponse du bot
     const response = await fetch("/api/faq/message", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
       body: JSON.stringify({ message: userData.message })
     });
 
@@ -145,12 +179,16 @@ const generateBotResponse = async (incomingMessageDiv) => {
     console.log("REPONSE API :", data);
     if (!response.ok) throw new Error(data.message || "Erreur serveur");
 
-    const botText = data.response || data.reponse || "Pas de réponse disponible.";
+    // Si type service et services disponibles
+    if (data.type === "service" && data.services) {
+      await typeText(messageElement, "Voici la liste de nos services disponibles :");
+      displayServiceButtons(data.services);
 
-    // Affiche le texte du bot avec effet typing
-    await typeText(messageElement, botText);
+    } else {
+      const botText = data.response || data.reponse || "Pas de réponse disponible.";
+      await typeText(messageElement, botText);
+    }
 
-    // Si un agent est associé, afficher les boutons
     if (data.agent) displayAgentButtons(data.agent);
 
   } catch (error) {
@@ -158,7 +196,6 @@ const generateBotResponse = async (incomingMessageDiv) => {
     messageElement.innerText = "Erreur serveur, veuillez réessayer.";
     messageElement.style.color = "#ff0000";
   } finally {
-    // Supprimer l'état "thinking" et scroll vers le bas
     incomingMessageDiv.classList.remove("thinking");
     chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
   }
@@ -168,61 +205,46 @@ const generateBotResponse = async (incomingMessageDiv) => {
 // ==========================================================
 // ENVOI DU MESSAGE UTILISATEUR
 // ==========================================================
-
 const handleOutgoingMessage = (e) => {
   e.preventDefault();
   userData.message = messageInput.value.trim();
   if (!userData.message) return;
 
   messageInput.value = "";
-  messageInput.dispatchEvent(new Event("input")); // déclenche resize du textarea
+  messageInput.dispatchEvent(new Event("input"));
 
-  // Création message utilisateur
   const userMessageDiv = createMessageElement(
     `<div class="message-text">${userData.message}</div>`,
     "user-message"
   );
   chatBody.appendChild(userMessageDiv);
 
-  // Création message "thinking" du bot
   const botThinkingDiv = createMessageElement(
     `<svg class="bot-avatar" xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 1024 1024">
       <path d="M738.3 287.6H285.7c-59 0-106.8 47.8-106.8 106.8v303.1c0 59 47.8 106.8 106.8 106.8h81.5v111.1c0 .7.8 1.1 1.4.7l166.9-110.6 41.8-.8h117.4l43.6-.4c59 0 106.8-47.8 106.8-106.8V394.5c0-59-47.8-106.9-106.8-106.9z"/>
     </svg>
     <div class="message-text">
       <div class="thinking-indicator">
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
       </div>
     </div>`,
     "bot-message", "thinking"
   );
   chatBody.appendChild(botThinkingDiv);
-
   chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
 
-  // Appel API pour générer réponse bot
   generateBotResponse(botThinkingDiv);
 };
 
-
 // ==========================================================
-// ENVOI AVEC LA TOUCHE ENTER
+// EVENTS
 // ==========================================================
-
 messageInput.addEventListener("keydown", (e) => {
   const userMessage = e.target.value.trim();
-  // Si ENTER pressé, pas de SHIFT, et écran large
   if (e.key === "Enter" && userMessage && !e.shiftKey && window.innerWidth > 768) {
     handleOutgoingMessage(e);
   }
 });
-
-
-// ==========================================================
-// AUTO-RESIZE DU TEXTAREA
-// ==========================================================
 
 messageInput.addEventListener("input", () => {
   messageInput.style.height = `${initialInputHeight}px`;
@@ -231,18 +253,7 @@ messageInput.addEventListener("input", () => {
     messageInput.scrollHeight > initialInputHeight ? "15px" : "32px";
 });
 
-
-// ==========================================================
-// BOUTON ENVOI
-// ==========================================================
-
 sendMessageButton.addEventListener("click", (e) => handleOutgoingMessage(e));
-
-
-// ==========================================================
-// TOGGLE CHATBOT
-// ==========================================================
-
 chatbotToggler.addEventListener("click", () => {
   document.body.classList.toggle("show-chatbot");
 });
@@ -252,85 +263,44 @@ closeChatbot.addEventListener("click", () => {
 
 
 // ==========================================================
-// QUICK BUTTONS (actions rapides)
+// QUICK BUTTONS
 // ==========================================================
 
 document.querySelectorAll(".quick-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     const action = btn.dataset.action;
-
-    if (action === "agent") {
-      handleContactAgent(); // Contact direct d'un agent
-      return;
-    }
-
+    if (action === "agent") { handleContactAgent(); return; }
     let message = "";
     if (action === "services") message = "Pouvez-vous me donner des infos sur vos services ?";
     if (action === "faq") message = "J’aimerais consulter la FAQ.";
-
     messageInput.value = message;
     sendMessageButton.click();
   });
 });
 
-
 // ==========================================================
-// FONCTION CONTACT AGENT
+// CONTACT AGENT (inchangé)
 // ==========================================================
-
-
-
-// ==========================================================
-// FONCTION CONTACT AGENT
-// ==========================================================
-
 async function handleContactAgent() {
-
-  // 1️⃣ Message utilisateur
-  const userMessageDiv = createMessageElement(
-    `<div class="message-text">Je souhaite contacter un agent.</div>`,
-    "user-message"
-  );
+  const userMessageDiv = createMessageElement(`<div class="message-text">Je souhaite contacter un agent.</div>`, "user-message");
   chatBody.appendChild(userMessageDiv);
-
-  // 2️⃣ Message bot vide pour affichage progressif
   const botDiv = createMessageElement(`<div class="message-text"></div>`, "bot-message");
   chatBody.appendChild(botDiv);
-
-  await typeText(botDiv.querySelector(".message-text"), "Bien recu!!! Pour contacter un  agent, veuillez choisir une option afin que je puisse vous mettre en contacte avec nos agents.");
+  await typeText(botDiv.querySelector(".message-text"), "Bien recu!!! Pour contacter un agent, veuillez choisir une option afin que je puisse vous mettre en contacte avec nos agents.");
 
   try {
-    // 3️⃣ Récupération du token depuis localStorage
     const token = localStorage.getItem("token");
-
-    // 4️⃣ Vérification que le token existe
-    if (!token) {
-      typeText(botDiv.querySelector(".message-text"), "Vous devez être connecté pour contacter un agent.");
-      return;
-    }
-
-    // 5️⃣ Appel API pour récupérer les informations de l'agent
-    const response = await fetch("http://localhost:5000/api/faq/contact-agent", {
+    if (!token) { typeText(botDiv.querySelector(".message-text"), "Vous devez être connecté."); return; }
+    const response = await fetch("http://localhost:5000/api/agent/contact-agent", {
       method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
+      headers: { "Authorization": `Bearer ${token}` }
     });
-
     const data = await response.json();
-    console.log("API contact-agent:", data);
-
-    // 6️⃣ Vérification du statut
-    if (data.status === "succes" || data.status === "success") {
-      displayAgentButtons(data.agent);
-    } else {
-      typeText(botDiv.querySelector(".message-text"), "Aucun agent disponible pour le moment.");
-      console.error("Erreur API contact-agent :", data);
-    }
-
+    if (data.status === "succes" || data.status === "success") displayAgentButtons(data.agent);
+    else await typeText(botDiv.querySelector(".message-text"), "Aucun agent disponible pour le moment.");
   } catch (error) {
-    console.error("Erreur fetch contact-agent :", error);
-    typeText(botDiv.querySelector(".message-text"), "Impossible de récupérer les informations de contact.");
+    console.error(error);
+    await typeText(botDiv.querySelector(".message-text"), "Impossible de récupérer les informations de contact.");
   }
 }
 
@@ -338,38 +308,15 @@ async function handleContactAgent() {
 // ==========================================================
 // AFFICHER LES BOUTONS POUR CONTACTER UN AGENT
 // ==========================================================
-
 function displayAgentButtons(agent = { whatsapp: "", email: "", telephone: "" }) {
   const contactDiv = document.createElement("div");
   contactDiv.classList.add("agent-contact");
-
-
-
-  // Bouton WhatsApp
-  if (agent.whatsapp) {
-    const btnWhats = document.createElement("a");
-    btnWhats.href = "https://wa.me/" + agent.whatsapp;
-    btnWhats.innerText = "💬 WhatsApp";
-    btnWhats.target = "_blank";
-    contactDiv.appendChild(btnWhats);
-  }
-
-  // Bouton Email
-  if (agent.email) {
-    const btnMail = document.createElement("a");
-    btnMail.href = "mailto:" + agent.email;
-    btnMail.innerText = "📧 Email";
-    contactDiv.appendChild(btnMail);
-  }
-
-  // Bouton Appel
-  if (agent.telephone) {
-    const btnCall = document.createElement("a");
-    btnCall.href = "tel:" + agent.telephone;
-    btnCall.innerText = "📞 Appeler";
-    contactDiv.appendChild(btnCall);
-  }
-
+  if (agent.whatsapp) { const btn = document.createElement("a"); btn.href = "https://wa.me/" + agent.whatsapp; btn.innerText = "💬 WhatsApp"; btn.target="_blank"; contactDiv.appendChild(btn); }
+  if (agent.email) { const btn = document.createElement("a"); btn.href = "mailto:" + agent.email; btn.innerText = "📧 Email"; contactDiv.appendChild(btn); }
+  if (agent.telephone) { const btn = document.createElement("a"); btn.href = "tel:" + agent.telephone; btn.innerText = "📞 Appeler"; contactDiv.appendChild(btn); }
   chatBody.appendChild(contactDiv);
   chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
 }
+
+
+

@@ -1,10 +1,8 @@
 from flask import Blueprint, jsonify, request
 from token_nize import token_required
 from models.sauvergarde import sauvegarder_conversation
-from models.contact_agent import recuperer_agent_par_intention
-
-# Module NLP
 from nlp.faq_engine import trouver_meilleure_correspondance
+
 
 faq_bp = Blueprint("faq", __name__, url_prefix="/api/faq")
 
@@ -26,14 +24,19 @@ def chatbot_response():
     # Appel moteur NLP
     result = trouver_meilleure_correspondance(message)
 
+
     response_payload = {
-        "status": "success",
-        "user": request.user_name,
-        "reponse": result["reponse"],
-        "confidence_score": round(result["confiance"], 2),
-        "matched": result["trouve"]
-        
-    }
+    "status": "success",
+    "user": request.user_name,
+    "type": result.get("type"),
+    "reponse": result.get("reponse"),
+    "services": result.get("services"),
+    "agent": result.get("agent"),
+    "confidence_score": round(result.get("confiance", 0), 2),
+    "matched": result.get("trouve")
+}
+
+    
 
     if result.get("agent"):
        response_payload["agent"] = result["agent"]
@@ -48,37 +51,9 @@ def chatbot_response():
         )
     except Exception as e:
         print("Erreur lors de la sauvegarde:", e)
-
-        
-
     return jsonify(response_payload), 200
 
 
 
-
-# Recuperer un agent dans la bd
-
-
-
-@faq_bp.route("/contact-agent", methods=["GET"])
-
-@token_required
-def get_agent_contact():
-    agent = recuperer_agent_par_intention(1)
-
-    if not agent:
-        return jsonify({
-            "status": "error",
-            "message": "Aucun agent disponible"
-        }), 404
-    
-    return jsonify({
-        "status" : "succes",
-        "agent" : {
-            "whatsapp" : agent["whatsapp"],
-            "telephone" : agent["telephone"],
-            "email" : agent["email"]
-             }
-    }),200
     
 

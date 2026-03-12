@@ -458,3 +458,22 @@ h1.left-align {
 
 
 
+.service-buttons {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:8px;
+}
+
+.service-buttons button{
+  background:#5350c4;
+  color:white;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.service-buttons button:hover{
+  background:#5350c4;
+}
