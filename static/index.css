@@ -157,6 +157,7 @@ body.show-chatbot .chatbot-popup {
   flex-direction: column;
   scrollbar-width: thin;
   scrollbar-color: #ccccf5 transparent;
+  
 }
 
 /* Scrollbar styling optionnel */
@@ -457,23 +458,126 @@ h1.left-align {
 }
 
 
+/* ============================ */
+/* BOUTONS SERVICES & AGENT      */
+/* ============================ */
 
-.service-buttons {
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-top:8px;
+/* Conteneur des boutons agent / services */
+.agent-contact, .service-buttons {
+  display: flex;
+  flex-direction: column; /* aligne verticalement */
+  gap: 10px; /* espace entre les boutons */
+  margin-top: 10px;
+  padding: 10px;
 }
 
-.service-buttons button{
-  background:#5350c4;
-  color:white;
-  border:none;
-  padding:6px 12px;
-  border-radius:6px;
-  cursor:pointer;
+/* Styles communs pour les boutons */
+.agent-contact a,
+.service-buttons a,
+.service-buttons button {
+  text-decoration: none;
+  background-color: #5350c4; /* couleur de fond */
+  color: white; /* texte */
+  padding: 8px 15px; /* espace intérieur */
+  border-radius: 8px; /* coins arrondis */
+  text-align: center;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  display: inline-block;
+  max-width: 200px; /* largeur max */
+  cursor: pointer;
+  border: none;
 }
 
-.service-buttons button:hover{
-  background:#5350c4;
+/* Effet hover */
+.agent-contact a:hover,
+.service-buttons a:hover,
+.service-buttons button:hover {
+  background-color: #3d39ac;
+  transform: scale(1.03);
+}
+
+/* Responsive: réduire largeur sur mobile */
+@media (max-width: 768px) {
+  .agent-contact a,
+  .service-buttons a,
+  .service-buttons button {
+    max-width: 100%;
+  }
+}
+
+
+/*ESPACEMENT*/
+
+/* Nom du service */
+.service-name {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;       /* seul le nom est centré */
+    border-bottom: 2px solid #2c3e50;  /* séparation */
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+}
+
+/* Description */
+.service-description {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    text-align: left;         /* aligné à gauche pour une lecture facile */
+}
+
+/* Chaque bloc de menu */
+.menu-section {
+    margin: 15px 0;
+    padding: 12px;
+    background-color: #f2f6fa;  /* fond léger */
+    border-left: 4px solid #3d39ac;/* accent visuel à gauche */
+    border-radius: 6px;
+}
+
+/* Titres de section (Fonctionnalités, Avantages, Processus) */
+.menu-title {
+    font-weight: bold;
+    font-size: 15px;
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+/* Listes */
+.menu-section ul, .menu-section ol {
+    margin-left: 20px;
+    line-height: 1.5;
+}
+
+.menu-section li {
+    margin-bottom: 5px;
+}
+
+/* Timeline / Processus */
+.menu-section ol {
+    counter-reset: step;
+    list-style: none;
+    padding-left: 0;
+}
+.menu-section ol li {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 10px;
+}
+.menu-section ol li::before {
+    content: counter(step);
+    counter-increment: step;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background-color: #3d39ac;;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 20px;
+    font-size: 12px;
+    font-weight: bold;
 }

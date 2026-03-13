@@ -11,6 +11,7 @@ service_bp = Blueprint("service", __name__, url_prefix="/api/list")
 # Récupérer tous les services (liste pour les boutons)
 # ==========================================================
 @service_bp.route("/service", methods=["GET"])
+@token_required
 def get_services():
     try:
         services = recuperer_service_par_intention()  # sans id => liste de services

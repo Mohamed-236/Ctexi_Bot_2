@@ -50,10 +50,12 @@ def chatbot_response():
             intention=result.get("intention")
         )
     except Exception as e:
-        print("Erreur lors de la sauvegarde:", e)
+            print(f" Erreur lors de la sauvegarde pour user_id={request.user_id} : {e}")
+        # Optionnel : inclure l'erreur dans la réponse pour debug
+            response_payload["sauvegarde_error"] = str(e)
+
     return jsonify(response_payload), 200
 
 
 
-    
 

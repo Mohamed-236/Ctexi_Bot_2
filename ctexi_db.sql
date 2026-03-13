@@ -182,87 +182,146 @@ CREATE TABLE core.service(
 
 
 INSERT INTO core.service (nom_service, descriptions, menu, icone) VALUES
-
 (
-'CTEXI Buy',
-'CTEXI Buy est un service qui vous permet d’acheter facilement des produits à l’international (Chine, Turquie, Europe, etc.) même si vous ne maîtrisez pas les procédures d’importation.',
-'{
- "fonctionnalites": [
-   "Recherche de fournisseurs fiables",
-   "Négociation avec les fournisseurs",
-   "Achat sécurisé des produits",
-   "Suivi de commande"
- ],
- "avantages": [
-   "Réduction des risques d’arnaque",
-   "Gain de temps",
-   "Accompagnement par des experts"
- ]
-}',
-'/icons/buy.png'
+    'CTEXI Buy',
+    'CTEXI Buy est le service d’achat de produits en Chine, sécurisé et fiable. Il accompagne le client de la recherche à la livraison.',
+    '{
+        "description": "CTEXI Buy vous permet d’acheter facilement des produits en Chine. L’entreprise se charge de trouver les fournisseurs fiables, d’acheter, vérifier, conditionner et expédier les produits vers le Burkina Faso.",
+        "fonctionnalites": [
+            "Recherche des produits selon les besoins du client",
+            "Sourcing de fournisseurs fiables",
+            "Achat des produits",
+            "Vérification qualité et conformité",
+            "Conditionnement sécurisé",
+            "Expédition vers le Burkina Faso"
+        ],
+        "avantages": [
+            "Sécurité maximale des transactions",
+            "Expertise locale et connaissance du marché chinois",
+            "Réduction des risques d’erreur",
+            "Processus transparent étape par étape"
+        ],
+        "processus": [
+            {"etape": 1, "titre": "Recherche produit"},
+            {"etape": 2, "titre": "Sourcing fournisseurs"},
+            {"etape": 3, "titre": "Achat"},
+            {"etape": 4, "titre": "Vérification qualité"},
+            {"etape": 5, "titre": "Conditionnement"},
+            {"etape": 6, "titre": "Expédition"}
+        ]
+    }',
+    'ctexi_buy.png'
 ),
-
 (
-'CTEXI Travel',
-'CTEXI Travel accompagne les entrepreneurs et particuliers dans leurs voyages professionnels à l’étranger afin de trouver des fournisseurs et développer leur business.',
-'{
- "services": [
-   "Organisation de voyages d’affaires",
-   "Assistance pour visa",
-   "Réservation d’hôtels",
-   "Interprétation et accompagnement"
- ],
- "destinations": [
-   "Chine",
-   "Turquie",
-   "Dubaï",
-   "Europe"
- ]
-}',
-'/icons/travel.png'
+    'CTEXI Cargo',
+    'CTEXI Cargo vous permet de suivre l’expédition de vos colis depuis la Chine vers le Burkina Faso avec un suivi en temps réel.',
+    '{
+        "description": "CTEXI Cargo permet aux clients de suivre leurs colis depuis l’enregistrement en Chine jusqu’à la livraison finale au Burkina Faso. Chaque colis reçoit un code unique et des notifications automatiques sont envoyées à chaque étape.",
+        "fonctionnalites": [
+            "Enregistrement de colis avec code unique",
+            "Suivi en temps réel des colis",
+            "Notifications automatiques par WhatsApp ou SMS",
+            "Gestion des changements de téléphone et des colis multiples"
+        ],
+        "avantages": [
+            "Suivi précis et transparent",
+            "Notifications instantanées pour chaque mise à jour",
+            "Possibilité de suivre plusieurs colis simultanément",
+            "Réduction des erreurs de suivi"
+        ],
+        "processus": [
+            {"etape": 1, "titre": "Réception et enregistrement en Chine"},
+            {"etape": 2, "titre": "Préparation du colis"},
+            {"etape": 3, "titre": "Expédition"},
+            {"etape": 4, "titre": "Transit vers le Burkina Faso"},
+            {"etape": 5, "titre": "Arrivée à l’entrepôt"},
+            {"etape": 6, "titre": "Dédouanement et livraison"}
+        ]
+    }',
+    'ctexi_cargo.png'
 ),
-
 (
-'CTEXI Académie',
-'CTEXI Académie est une plateforme de formation dédiée au commerce international, à l’import-export et au développement d’affaires.',
-'{
- "formations": [
-   "Formation import-export",
-   "Recherche de fournisseurs internationaux",
-   "Stratégies de négociation commerciale",
-   "Gestion logistique internationale"
- ],
- "avantages": [
-   "Formateurs expérimentés",
-   "Formation pratique",
-   "Opportunités de networking"
- ]
-}',
-'/icons/academie.png'
+    'CTEXI Pay',
+    'CTEXI Pay facilite les transferts d’argent entre le Burkina Faso et la Chine avec simulation de paiement et contact direct.',
+    '{
+        "description": "CTEXI Pay permet aux clients de connaître le taux de change du jour, de simuler le montant à payer en FCFA et de contacter directement le service via WhatsApp pour finaliser la transaction.",
+        "fonctionnalites": [
+            "Affichage du taux de change RMB ↔ FCFA",
+            "Simulation du montant à payer",
+            "Envoi automatique d’un message pré-rempli au service",
+            "Historique des taux et gestion par l’admin"
+        ],
+        "avantages": [
+            "Transferts sécurisés",
+            "Calcul automatique du montant à payer",
+            "Communication directe avec le service",
+            "Taux mis à jour et fiables"
+        ],
+        "processus": [
+            {"etape": 1, "titre": "Consultation du taux de change"},
+            {"etape": 2, "titre": "Simulation du paiement"},
+            {"etape": 3, "titre": "Validation et contact via WhatsApp"},
+            {"etape": 4, "titre": "Confirmation et suivi de la transaction"}
+        ]
+    }',
+    'ctexi_pay.png'
 ),
-
 (
-'CTEXI Cargo',
-'CTEXI Cargo est un service de transport et logistique qui permet d’expédier vos marchandises depuis l’étranger vers votre pays en toute sécurité.',
-'{
- "services": [
-   "Transport maritime",
-   "Transport aérien",
-   "Groupage de marchandises",
-   "Suivi de colis"
- ],
- "avantages": [
-   "Livraison rapide",
-   "Sécurité des marchandises",
-   "Tarifs compétitifs"
- ]
-}',
-'/icons/cargo.png'
+    'CTEXI Travel',
+    'CTEXI Travel s’occupe de tout ce qui concerne les voyages en Chine : visas, billets d’avion et hôtels.',
+    '{
+        "description": "CTEXI Travel fournit toutes les informations nécessaires pour voyager en Chine et permet de contacter facilement un agent pour chaque service.",
+        "fonctionnalites": [
+            "Assistance pour l’obtention de visas",
+            "Réservation de billets d’avion",
+            "Réservation d’hôtels",
+            "Contact direct avec un agent CTEXI"
+        ],
+        "avantages": [
+            "Facilite toutes les démarches de voyage",
+            "Informations claires et à jour",
+            "Assistance personnalisée",
+            "Gain de temps et sécurité"
+        ],
+        "processus": [
+            {"etape": 1, "titre": "Visa"},
+            {"etape": 2, "titre": "Billet d’avion"},
+            {"etape": 3, "titre": "Réservation hôtel"},
+            {"etape": 4, "titre": "Contact agent pour confirmation"}
+        ]
+    }',
+    'ctexi_travel.png'
+),
+(
+    'CTEXI Académie',
+    'CTEXI Académie propose des formations et du coaching sur l’import-export, l’achat en ligne et le marketing digital.',
+    '{
+        "description": "CTEXI Académie offre aux clients et partenaires des formations complètes sur l’achat en Chine, l’import-export et le marketing digital, ainsi que du coaching personnalisé.",
+        "fonctionnalites": [
+            "Formations sur achats en ligne",
+            "Formations sur marketing digital",
+            "Coaching personnalisé",
+            "Inscription et contact via WhatsApp, mail ou formulaire"
+        ],
+        "avantages": [
+            "Amélioration des compétences professionnelles",
+            "Accompagnement personnalisé",
+            "Programmes adaptés au public cible",
+            "Accès facile aux informations et inscriptions"
+        ],
+        "processus": [
+            {"etape": 1, "titre": "Consultation des formations disponibles"},
+            {"etape": 2, "titre": "Sélection du programme"},
+            {"etape": 3, "titre": "Inscription ou demande d’informations"},
+            {"etape": 4, "titre": "Suivi et coaching"}
+        ]
+    }',
+    'ctexi_academie.png'
 );
 
 SELECT * FROM core.service;
 
-
+TRUNCATE TABLE core.service RESTART IDENTITY CASCADE;
 
 
 --Table formations
