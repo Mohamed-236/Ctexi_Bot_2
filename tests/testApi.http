@@ -47,7 +47,7 @@ POST  http://127.0.0.1:5000/api/faq/message
 Content-Type: application/json
 
 {
-  "message": "salut"
+  "message": "ca va?"
   
 }
 

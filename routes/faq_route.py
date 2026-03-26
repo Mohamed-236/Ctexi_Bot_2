@@ -17,12 +17,15 @@ def chatbot_response():
 
     data = request.get_json()
     message = data.get("message")
+    id_user = request.user_id
+    
 
     if not message:
         return jsonify({"status": "error", "message": "Message manquant"}), 400
-
+    
+   
     # Appel moteur NLP
-    result = trouver_meilleure_correspondance(message)
+    result = trouver_meilleure_correspondance(message, id_user)
 
 
     response_payload = {

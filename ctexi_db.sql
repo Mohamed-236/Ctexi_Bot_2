@@ -1,5 +1,4 @@
--- database: :memory:
--- Active: 1772149791498@@127.0.0.1@5435@ctexi_db@public498@@127.0.0.1@5435@ctexi_db@public498@@127.0.0.1@5435@ctexi_db498@@127.0.0.1@5435@ctexi_db069@@127.0.0.1@5435@ctexi_db069@@127.0.0.1@5435@ctexi_db069@@127.0.0.1@5435@ctexi_db069@@127.0.0.1@5435@ctexi_db069@@127.0.0.1@5435@ctexi_database402@@127.0.0.1@5433@ctexi_db@chatbot507@@127.0.0.1@5433@ctexi_db507@@127.0.0.1@5433@ctexi_db507@@127.0.0.1@5433@ctexi_db507@@127.0.0.1@5433@ctexi_db507@@127.0.0.1@5433@ctexi_db791@@127.0.0.1@5433@ctexi_db@chatbot791@@127.0.0.1@5433@ctexi_db527@@127.0.0.1@5433@ctexi_db510@@127.0.0.1@5433@ctexi_db
+-- Active: 1774354264909@@127.0.0.1@5432@ctexi_db
 
 -----------------------------------CREATION DES SCHEMA---------------------------------------------------
 
@@ -50,14 +49,13 @@ CREATE TABLE auth.users(
     
 ); 
 
-
+SELECT * FROM auth.users;
 
 --Table agents
 DROP TABLE auth.agents CASCADE;
 
 CREATE TABLE auth.agents(
     id_agent SERIAL PRIMARY KEY,
-    id_user INTEGER REFERENCES auth.users(id_user) ON DELETE CASCADE,
     id_intent INTEGER REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
     whatsapp VARCHAR(20) NOT NULL,
     telephone VARCHAR(20) NOT NULL,
@@ -66,27 +64,25 @@ CREATE TABLE auth.agents(
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+SELECT * FROM auth.agents;
 ----------------------------------NSERTION DES AGENTS EXEMPLE--------------------------------------
 
 TRUNCATE TABLE auth.agents RESTART IDENTITY;
 
-INSERT INTO auth.agents (id_user, id_intent, whatsapp, telephone, email)
+INSERT INTO auth.agents ( id_intent, whatsapp, telephone, email)
 VALUES
-(1, 1, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 2, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 3, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 4, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 5, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 6, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 7, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 8, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 9, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 10, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com');
-
-INSERT INTO auth.agents (id_user, id_intent, whatsapp, telephone, email)
-VALUES
-(1, 11, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com'),
-(1, 12, '22674381094', '+22669090991', 'yakfismokonzi@gmail.com');
+(1, '22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(2, '22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(3, '22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(4, '22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(5, '22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(6, '22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(7, '22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(8, '22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(9, '22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(10,'22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(11,'22674381094', '+22669090991',  'yakfismokonzi@gmail.com'),
+(12,'22674381094', '+22669090991',  'yakfismokonzi@gmail.com');
 
 
 SELECT * FROM auth.agents;
@@ -340,12 +336,23 @@ CREATE TABLE core.colis(
     id_colis SERIAL PRIMARY KEY,
     code_colis VARCHAR(50) UNIQUE NOT NULL,
     id_user INTEGER REFERENCES auth.users(id_user) ON DELETE CASCADE,
-    statut VARCHAR(50),
-    type_colis VARCHAR(50),
-    modes VARCHAR(50)
+    statut VARCHAR(100),
+    type_colis VARCHAR(100),
+    modes VARCHAR(100),
+    derniere_maj TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
+
+INSERT INTO core.colis (code_colis, id_user, statut, type_colis, modes) VALUES
+('CTX10001', 1, 'En préparation', 'Electronique', 'Aérien'),
+('CTX10002', 1, 'Expédié', 'Vêtements', 'Maritime'),
+('CTX10003', 6, 'En transit', 'Accessoires', 'Aérien'),
+('CTX10004', 7, 'Arrivé au centre de tri', 'Téléphone', 'Aérien'),
+('CTX10005', 9, 'Livré', 'Chaussures', 'Maritime');
+
+
+SELECT * FROM core.colis;
 
 --Table taux_change
 CREATE TABLE core.taux_change(
@@ -353,8 +360,6 @@ CREATE TABLE core.taux_change(
     taux NUMERIC(10, 2) NOT NULL,
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-
 
 
 
@@ -429,15 +434,6 @@ TRUNCATE TABLE chatbot.intention RESTART IDENTITY CASCADE;
 -- Supprimer la colonne embedding
 ALTER TABLE chatbot.faq DROP COLUMN embedding;
 ALTER TABLE chatbot.intention DROP COLUMN embedding;
-
-
-
-
-
-
-
-
-
 
 
 

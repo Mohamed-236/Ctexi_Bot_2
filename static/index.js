@@ -31,6 +31,7 @@ if (loginForm) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Erreur lors de la connexion");
+      console.log("Login data:", data);
       localStorage.setItem("token", data.token);
       localStorage.setItem("user_name", data.user?.nom || "");
       window.location.href = "/";

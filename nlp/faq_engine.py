@@ -25,6 +25,12 @@ import psycopg2.extras
 import logging
 
 
+#Suivi colis
+from models.suivi_colis import recuperer_colis, est_code_colis
+
+
+
+
 # ==========================================================
 # CONFIGURATION DU LOGGING
 # ==========================================================
@@ -261,7 +267,7 @@ def rechercher_faq(embedding_message, id_intention):
 # ==========================================================
 # MOTEUR PRINCIPAL
 # ==========================================================
-def trouver_meilleure_correspondance(message_utilisateur):
+def trouver_meilleure_correspondance(message_utilisateur, id_user):
     """
     Fonction principale pour trouver la meilleure réponse à un message utilisateur.
     - Détecte l'intention
@@ -273,11 +279,44 @@ def trouver_meilleure_correspondance(message_utilisateur):
 
     logging.info(f"Message utilisateur : {message_utilisateur}")
     
+
     # Encodage du message utilisateur en vecteur (embedding)
     embedding_message = modele_embedding.encode(
         [message_utilisateur],
         normalize_embeddings=True
     )
+
+
+    # ===========================
+# DETECTION DIRECTE CODE COLIS
+# ===========================
+
+    if est_code_colis(message_utilisateur):
+
+     
+
+        colis = recuperer_colis(message_utilisateur,id_user)
+
+        if colis:
+
+            code, statut, type_colis, modes, derniere_maj = colis
+
+            return {
+                "type": "tracking",
+                "reponse": f"📦 <b>Code colis</b> : {code}<br>"
+                        f"🚚 <b>Transport</b> : {modes}<br>"
+                        f"📌 <b>Statut</b> : {statut}<br>"
+                        f"📦 <b>Type</b> : {type_colis}<br>"
+                        f"🕒 <b>Dernière mise à jour</b> : {derniere_maj}",
+                "trouve": True
+            }
+        else:
+
+            return {
+                "type":"erreur_suivi_colis",
+                "reponse":"Code colis invalide ou non associé à votre compte.",
+                "trouve":False
+            }
 
     # Détection de l'intention
     intention, score_intention = detecter_intention(
@@ -336,7 +375,22 @@ def trouver_meilleure_correspondance(message_utilisateur):
             "trouve": True,
             "intention": intention["nom"]
         }
-    
+
+
+# ===========================
+# LOGIQUE SUIVI COLIS
+# ===========================
+
+    if intention["nom"] == "suivi_colis":
+
+        return {
+            "type":"tracking_request",
+            "reponse":"Veuillez entrer votre code colis CTEXI.",
+            "confiance":float(score_intention),
+            "trouve":True,
+            "intention":intention["nom"]
+        }
+        
     
         
 
