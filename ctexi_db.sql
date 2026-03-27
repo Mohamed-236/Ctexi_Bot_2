@@ -362,8 +362,8 @@ CREATE TABLE core.taux_change(
 );
 
 
-
 -------------------------------------SCHEMA SYSTEMS--------------------------------------------------------------
+
 
 --Table logs 
 CREATE TABLE systems.log(

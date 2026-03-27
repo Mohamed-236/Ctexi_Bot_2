@@ -36,7 +36,8 @@ def chatbot_response():
     "services": result.get("services"),
     "agent": result.get("agent"),
     "confidence_score": round(result.get("confiance", 0), 2),
-    "matched": result.get("trouve")
+    "matched": result.get("trouve"),
+    "data": result.get("data")
 }
 
     
@@ -49,7 +50,7 @@ def chatbot_response():
         sauvegarder_conversation(
             id_user=request.user_id,
             message_utilisateur=message,
-            reponse_bot=result["reponse"],
+            reponse_bot=result.get("reponse", ""),
             intention=result.get("intention")
         )
     except Exception as e:

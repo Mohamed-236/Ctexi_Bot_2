@@ -114,6 +114,21 @@ function formatMenu(menu) {
   return html;
 }
 
+
+function formatTracking(data) {
+  return `
+    <div class="tracking-card">
+      📦 <b>Code colis</b> : ${data.code}<br>
+      🚚 <b>Transport</b> : ${data.transport}<br>
+      📌 <b>Statut</b> : ${data.statut}<br>
+      📦 <b>Type</b> : ${data.type_colis}<br>
+      🕒 <b>Dernière mise à jour</b> : ${data.derniere_maj}
+    </div>
+  `;
+}
+
+
+
 // ==========================================================
 // RÉCUPÉRER LES DÉTAILS D’UN SERVICE
 // ==========================================================
@@ -162,16 +177,44 @@ const generateBotResponse = async (incomingMessageDiv) => {
     });
 
     const data = await response.json();
+    console.log("FULL DATA :", data);
+    console.log("TRACKING DATA :", data.data);
     if (!response.ok) throw new Error(data.message || "Erreur serveur");
 
     if (data.type === "service" && data.services) {
       await typeText(messageElement, "Voici la liste de nos services disponibles : Cliquez-pour plus de details");
       await displayServiceButtons(data.services);
+      
 
-    } else {
-      const botText = data.response || data.reponse || "Pas de réponse disponible.";
-      await typeText(messageElement, botText);
-    }
+    }else if (data.type === "tracking" && data.data) {
+
+    // 🔥 animation texte d'abord
+    await typeText(messageElement, data.reponse);
+
+    // 🔥 ensuite affichage propre
+    const d = data.data;
+
+    const trackingHTML = `
+      📦 <b>Code colis</b> : ${d.code}<br>
+      🚚 <b>Transport</b> : ${d.transport}<br>
+      📌 <b>Statut</b> : ${d.statut}<br>
+      📦 <b>Type</b> : ${d.type_colis}<br>
+      🕒 <b>Dernière mise à jour</b> : ${d.derniere_maj}
+    `;
+
+    const trackingDiv = createMessageElement(
+      `<div class="message-text">${trackingHTML}</div>`,
+      "bot-message"
+    );
+
+    chatBody.appendChild(trackingDiv);
+
+  }else if (data.type === "erreur_suivi_colis") {
+  await typeText(messageElement, data.reponse);
+  }else {
+    const botText = data.response || data.reponse || "Pas de réponse disponible.";
+    await typeText(messageElement, botText);
+  }
 
     if (data.agent) await displayAgentButtons(data.agent);
 
@@ -244,7 +287,7 @@ document.querySelectorAll(".quick-btn").forEach(btn => {
     if (action === "agent") { handleContactAgent(); return; }
     let message = "";
     if (action === "services") message = "Pouvez-vous me donner des infos sur vos services ?";
-    if (action === "faq") message = "J’aimerais consulter la FAQ.";
+    if (action === "suivi_colis") message = "Je veux suivre mon colis";
     messageInput.value = message;
     sendMessageButton.click();
   });

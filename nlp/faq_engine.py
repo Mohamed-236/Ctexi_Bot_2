@@ -290,25 +290,25 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
     # ===========================
 # DETECTION DIRECTE CODE COLIS
 # ===========================
-
     if est_code_colis(message_utilisateur):
-
-     
-
         colis = recuperer_colis(message_utilisateur,id_user)
 
         if colis:
 
             code, statut, type_colis, modes, derniere_maj = colis
 
-            return {
-                "type": "tracking",
-                "reponse": f"📦 <b>Code colis</b> : {code}<br>"
-                        f"🚚 <b>Transport</b> : {modes}<br>"
-                        f"📌 <b>Statut</b> : {statut}<br>"
-                        f"📦 <b>Type</b> : {type_colis}<br>"
-                        f"🕒 <b>Dernière mise à jour</b> : {derniere_maj}",
-                "trouve": True
+            return{
+                "type":"tracking",
+                "reponse":"Voici les informations de votre colis.",
+                "data":{
+                    "code":code,
+                    "transport":modes,
+                    "statut":statut,
+                    "type_colis":type_colis,
+                    "derniere_maj": derniere_maj.strftime("%Y-%m-%d %H:%M")
+
+                },
+                "trouve":True
             }
         else:
 
