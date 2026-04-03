@@ -309,7 +309,7 @@ async function handleContactAgent() {
     const token = localStorage.getItem("token");
     if (!token) { await typeText(botDiv.querySelector(".message-text"), "Vous devez être connecté."); return; }
 
-    const response = await fetch("http://localhost:5000/api/agent/contact-agent", {
+    const response = await fetch("http://127.0.0.1:5000/api/agent/contact-agent", {
       method: "GET",
       headers: { "Authorization": `Bearer ${token}` }
     });

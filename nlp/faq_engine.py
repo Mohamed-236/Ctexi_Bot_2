@@ -26,7 +26,10 @@ import logging
 
 
 #Suivi colis
-from models.suivi_colis import recuperer_colis, est_code_colis
+from models.suivi_colis import recuperer_colis
+
+# Pretraitement du code colis
+from nlp.preprocess_colis import est_code_colis
 
 
 

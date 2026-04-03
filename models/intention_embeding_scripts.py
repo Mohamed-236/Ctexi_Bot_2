@@ -17,6 +17,9 @@ model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniL
 # ================================
 # FONCTION PRINCIPALE
 # ================================
+
+
+
 def generate_intention_embeddings():
 
     conn = get_db_connection()

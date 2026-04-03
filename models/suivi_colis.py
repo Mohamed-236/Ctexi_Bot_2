@@ -22,8 +22,3 @@ def recuperer_colis(code_colis, id_user):
 
 
 
-
-
-def est_code_colis(message):
-    pattern = r'CTX[0-9]+'
-    return re.match(pattern,message.upper().strip())
