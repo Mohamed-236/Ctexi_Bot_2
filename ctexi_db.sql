@@ -427,7 +427,7 @@ SELECT * FROM auth.agents;
 --Ajout d'embeding dans intention
 SET search_path TO chatbot, public;
 
-
+SELECT * FROM chatbot.intention;
 
 -- Supprime toutes les lignes et réinitialise les séquences
 TRUNCATE TABLE chatbot.faq RESTART IDENTITY CASCADE;
@@ -557,7 +557,7 @@ VALUES
 
 
 
-----------------------------------contact_agent ==>10
+----------------------------------contact_agent ==> 10
 
 INSERT INTO chatbot.intention (nom, type_intent, descriptions)
 VALUES
@@ -569,7 +569,6 @@ discuter avec un conseiller,
 demander un contact WhatsApp, email ou téléphone,
 parler à une vraie personne, aide humaine urgente.'
 );
-
 
 
 
@@ -599,6 +598,8 @@ VALUES
 
 
 
+
+SELECT * FROM chatbot.faq;
 ------------------------------------------------Table Faq--------------------------------------------------------------
 
 
@@ -664,35 +665,96 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 
 INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 
-(5, 'comment fonctionne ctexi buy', 'CTEXI Buy vous accompagne de la recherche du produit jusqu’à la livraison : sourcing, achat, contrôle qualité et expédition.'),
+(5, 'comment fonctionne votre service ctexi buy', 'CTEXI Buy vous accompagne de la recherche du produit jusqu’à la livraison : sourcing, achat, contrôle qualité et expédition.'),
+(5, 'comment fonctionne  ctexi buy', 'CTEXI Buy vous accompagne de la recherche du produit jusqu’à la livraison : sourcing, achat, contrôle qualité et expédition.'),
+(5, 'comment fonctionne votre service d’achat', 'CTEXI Buy vous accompagne de la recherche du produit jusqu’à la livraison : sourcing, achat, contrôle qualité et expédition.'),
 
-(5, 'comment acheter en chine avec vous', 'Vous nous envoyez le produit souhaité, nous recherchons le fournisseur, achetons et livrons le produit.'),
+
+(5, 'comment acheter en chine ', 'Vous nous envoyez le produit souhaité, nous recherchons le fournisseur, achetons et livrons le produit.'),
+(5, 'comment acheter un produit en chine ', 'Vous nous envoyez le produit souhaité, nous recherchons le fournisseur, achetons et livrons le produit.'),
+(5, 'comment acheter un produit en chine  avec vous', 'Vous nous envoyez le produit souhaité, nous recherchons le fournisseur, achetons et livrons le produit.'),
+
 
 (5, 'quelles sont les étapes d’achat', 'Les étapes sont : demande client, recherche fournisseur, achat, contrôle qualité, expédition et livraison.'),
+(5, 'les étapes d’achat', 'Les étapes sont : demande client, recherche fournisseur, achat, contrôle qualité, expédition et livraison.'),
+(5, 'les étapes pour acheter', 'Les étapes sont : demande client, recherche fournisseur, achat, contrôle qualité, expédition et livraison.'),
+(5, 'les étapes pour un achat', 'Les étapes sont : demande client, recherche fournisseur, achat, contrôle qualité, expédition et livraison.'),
 
+(5, 'c’est possible d’acheter pour moi', 'Oui, nous achetons directement pour vous auprès de fournisseurs en Chine.'),
 (5, 'est ce que vous achetez pour moi', 'Oui, nous achetons directement pour vous auprès de fournisseurs en Chine.'),
+(5, 'vous achetez pour moi', 'Oui, nous achetons directement pour vous auprès de fournisseurs en Chine.'),
+(5, 'je veux que vous achetez pour moi', 'Oui, nous achetons directement pour vous auprès de fournisseurs en Chine.'),
+
 
 (5, 'comment passer une commande', 'Vous envoyez les détails du produit, nous nous occupons du reste jusqu’à la livraison.'),
+(5, 'comment faire une commande', 'Vous envoyez les détails du produit, nous nous occupons du reste jusqu’à la livraison.'),
+(5, 'comment effectuer une commande', 'Vous envoyez les détails du produit, nous nous occupons du reste jusqu’à la livraison.'),
+(5, 'comment effectuer une commande avec vous', 'Vous envoyez les détails du produit, nous nous occupons du reste jusqu’à la livraison.'),
+(5, 'comment effectuer une commande chez vous', 'Vous envoyez les détails du produit, nous nous occupons du reste jusqu’à la livraison.'),
+(5, 'comment effectuer une commande en chine', 'Vous envoyez les détails du produit, nous nous occupons du reste jusqu’à la livraison.'),
+(5, 'comment faire une commande en chine', 'Vous envoyez les détails du produit, nous nous occupons du reste jusqu’à la livraison.'),
+
 
 (5, 'combien de temps prend une commande', 'Le délai est généralement de 7 à 45 jours selon le mode de transport.'),
+(5, 'combien de temps prend une commande en chine', 'Le délai est généralement de 7 à 45 jours selon le mode de transport.'),
+(5, 'combien de temps dure une commande', 'Le délai est généralement de 7 à 45 jours selon le mode de transport.'),
+(5, 'une commande peut durer combien temps', 'Le délai est généralement de 7 à 45 jours selon le mode de transport.'),
+(5, 'une commande dure combien temps', 'Le délai est généralement de 7 à 45 jours selon le mode de transport.'),
+(5, 'une commande dure combien de jour', 'Le délai est généralement de 7 à 45 jours selon le mode de transport.'),
 
-(5, 'est ce que vous vérifiez les produits', 'Oui, nous faisons un contrôle qualité avant l’expédition pour vérifier la conformité.'),
 
-(5, 'que faire si le produit est defectueux', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
+(5, 'est ce que vous verifiez les produits', 'Oui, nous faisons un contrôle qualité avant l’expédition pour vérifier la conformité.'),
+(5, 'vous verifiez les produits', 'Oui, nous faisons un contrôle qualité avant l’expédition pour vérifier la conformité.'),
+(5, 'est ce que vous faites une verification des produits', 'Oui, nous faisons un contrôle qualité avant l’expédition pour vérifier la conformité.'),
+(5, 'vous faites une verification des produits', 'Oui, nous faisons un contrôle qualité avant l’expédition pour vérifier la conformité.'),
 
-(5, 'que faire si le produit n est pas conforme', 'Contactez-nous immédiatement avec des preuves, nous traitons le problème avec le fournisseur.'),
+
+(5, 'on fait comment si le produit est defectueux', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
+(5, 'que faire si le produit n’est pas conforme', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
+(5, 'que faire si le produit a un probleme', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
+(5, 'si le produit a un probleme', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
+(5, 'je fais comment si le produit n’est pas identique', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
+(5, 'comment on va faire si le produit n’est pas conforme', 'Contactez-nous immédiatement avec des preuves, nous traitons le problème avec le fournisseur.'),
+
 
 (5, 'proposez vous une assurance', 'Oui, une assurance transport peut être ajoutée pour couvrir pertes ou dommages.'),
+(5, 'est ce que vous proposez une assurance', 'Oui, une assurance transport peut être ajoutée pour couvrir pertes ou dommages.'),
+(5, 'vous avez une assurance', 'Oui, une assurance transport peut être ajoutée pour couvrir pertes ou dommages.'),
+(5, 'votre service dispose d’une assurance', 'Oui, une assurance transport peut être ajoutée pour couvrir pertes ou dommages.'),
 
-(5, 'comment se passe la livraison', 'La livraison se fait par avion ou bateau selon votre choix et votre budget.'),
+
+
+(5, 'comment se passe la livraison du produit', 'La livraison se fait par avion ou bateau selon votre choix et votre budget.'),
+(5, 'comment se fait la livraison', 'La livraison se fait par avion ou bateau selon votre choix et votre budget.'),
+(5, 'la livraison se passe comment', 'La livraison se fait par avion ou bateau selon votre choix et votre budget.'),
+(5, 'la livraison se fait comment', 'La livraison se fait par avion ou bateau selon votre choix et votre budget.'),
+(5, 'comment se fait la livraison', 'La livraison se fait par avion ou bateau selon votre choix et votre budget.'),
+(5, 'parle moi de la livraison', 'La livraison se fait par avion ou bateau selon votre choix et votre budget.'),
+(5, 'parle moi du procedure de la livraison', 'La livraison se fait par avion ou bateau selon votre choix et votre budget.'),
 
 (5, 'puis je annuler ma commande', 'Oui, uniquement si la commande n’a pas encore été payée au fournisseur.'),
+(5, 'on peut annuler une commande', 'Oui, uniquement si la commande n’a pas encore été payée au fournisseur.'),
+(5, 'est ce que c’est possible d’annuler ma commande', 'Oui, uniquement si la commande n’a pas encore été payée au fournisseur.'),
+(5, 'puis je annuler ma commande', 'Oui, uniquement si la commande n’a pas encore été payée au fournisseur.'),
+(5, 'c’est possible d’annuler ma commande', 'Oui, uniquement si la commande n’a pas encore été payée au fournisseur.'),
 
 (5, 'quels produits pouvez vous acheter', 'Nous pouvons acheter presque tous les produits disponibles en Chine selon la légalité.'),
+(5, 'quel type de produits pouvez vous acheter', 'Nous pouvons acheter presque tous les produits disponibles en Chine selon la légalité.'),
+(5, 'c’est quel produit vous pouvez acheter', 'Nous pouvons acheter presque tous les produits disponibles en Chine selon la légalité.'),
+(5, 'quels produits pouvez vous acheter', 'Nous pouvons acheter presque tous les produits disponibles en Chine selon la légalité.'),
+(5, 'vous acheter quel genre de produit', 'Nous pouvons acheter presque tous les produits disponibles en Chine selon la légalité.'),
+
 
 (5, 'comment payer la commande', 'Le paiement se fait après validation du devis et du produit choisi.'),
+(5, 'on fait comment pour payer une commande', 'Le paiement se fait après validation du devis et du produit choisi.'),
+(5, 'comment se fait le paiement', 'Le paiement se fait après validation du devis et du produit choisi.'),
+(5, 'comment payer une commande', 'Le paiement se fait après validation du devis et du produit choisi.'),
 
-(5, 'est ce fiable d acheter avec vous', 'Oui, nous sécurisons l’achat, vérifions les produits et réduisons les risques liés aux fournisseurs chinois.');
+(5, 'est ce fiable d’acheter avec vous', 'Oui, nous sécurisons l’achat, vérifions les produits et réduisons les risques liés aux fournisseurs chinois.'),
+(5, 'c’est garanti d’acheter avec vous', 'Oui, nous sécurisons l’achat, vérifions les produits et réduisons les risques liés aux fournisseurs chinois.'),
+(5, 'est ce fiable d’acheter avec vous', 'Oui, nous sécurisons l’achat, vérifions les produits et réduisons les risques liés aux fournisseurs chinois.'),
+(5, 'l’achat chez vous est garanti', 'Oui, nous sécurisons l’achat, vérifions les produits et réduisons les risques liés aux fournisseurs chinois.'),
+(5, 'c’est sure d’acheter chez vous', 'Oui, nous sécurisons l’achat, vérifions les produits et réduisons les risques liés aux fournisseurs chinois.');
 
 
 
@@ -823,3 +885,13 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 
 (12, 'preuve paiement', 'Une preuve est fournie après chaque transaction.');
 
+
+
+SELECT * FROM chatbot.faq;
+SELECT * FROM chatbot.intention;
+
+
+
+TRUNCATE TABLE chatbot.intention RESTART IDENTITY;
+
+TRUNCATE TABLE chatbot.faq RESTART IDENTITY;

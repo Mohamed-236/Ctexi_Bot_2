@@ -25,11 +25,17 @@ import psycopg2.extras
 import logging
 
 
-#Suivi colis
+# Suivi colis
 from models.suivi_colis import recuperer_colis
 
 # Pretraitement du code colis
 from nlp.preprocess_colis import est_code_colis
+
+
+# Coneversion des devises
+from services.conversion import convertir_devise
+from nlp.extraction_devise import extraire_donnees_conversion
+
 
 
 
@@ -321,6 +327,40 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
                 "trouve":False
             }
 
+        
+
+
+        
+    # ===========================
+    # DETECTION CONVERSION
+    # ===========================
+    donnees_conversion = extraire_donnees_conversion(message_utilisateur)
+
+    if donnees_conversion:
+        resultat = convertir_devise(
+            donnees_conversion["montant"],
+            donnees_conversion["devise_source"],
+            donnees_conversion["devise_cible"]
+        )
+
+        if resultat:
+            return {
+                "type": "conversion",
+                "reponse": f"{donnees_conversion['montant']} {donnees_conversion['devise_source']} ≈ {round(resultat, 2)} {donnees_conversion['devise_cible']}",
+                "trouve": True
+            }
+        else:
+            return {
+                "type": "erreur_conversion",
+                "reponse": "Impossible d'effectuer la conversion pour le moment.",
+                "trouve": False
+            }
+
+
+
+
+
+
     # Détection de l'intention
     intention, score_intention = detecter_intention(
         message_utilisateur,
@@ -393,8 +433,8 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
             "trouve":True,
             "intention":intention["nom"]
         }
-        
     
+
         
 
     # ===========================
