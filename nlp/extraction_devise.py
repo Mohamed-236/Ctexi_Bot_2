@@ -5,14 +5,27 @@ import re
 # ===========================
 
 MAPPING_DEVISES = {
+    # FCFA
     "fcfa": "XOF",
     "cfa": "XOF",
     "xof": "XOF",
+
+    # EURO
+    "euro": "EUR",
+    "euros": "EUR",
+    "eur": "EUR",
+
+    # USD
+    "usd": "USD",
+    "dollar": "USD",
+    "dollars": "USD",
+
+    # YUAN
     "rmb": "CNY",
+    "rnb": "CNY",   
     "yuan": "CNY",
     "cny": "CNY"
 }
-
 
 # ===========================
 # EXTRACTION DES INFOS
@@ -30,21 +43,30 @@ def extraire_donnees_conversion(message):
     positions = []
 
     for mot, code in MAPPING_DEVISES.items():
-        index = message.find(mot)
-        if index != -1:
-            positions.append((index, code))
+        # 🔥 mot complet uniquement
+        pattern = r"\b" + re.escape(mot) + r"\b"
+        match = re.search(pattern, message)
+
+        if match:
+            positions.append((match.start(), code))
 
     if len(positions) < 2:
         return None
 
-    # trier selon position dans la phrase
+    # trier
     positions.sort()
 
-    devise_source = positions[0][1]
-    devise_cible = positions[1][1]
+    # 🔥 éviter doublon (XOF, XOF)
+    codes_uniques = []
+    for _, code in positions:
+        if code not in codes_uniques:
+            codes_uniques.append(code)
+
+    if len(codes_uniques) < 2:
+        return None
 
     return {
         "montant": montant,
-        "devise_source": devise_source,
-        "devise_cible": devise_cible
+        "devise_source": codes_uniques[0],
+        "devise_cible": codes_uniques[1]
     }
