@@ -78,3 +78,39 @@ def convertir_devise(montant, devise_source, devise_cible):
     montant_final = montant_usd * taux[devise_cible]
 
     return montant_final
+
+
+
+
+
+
+from nlp.extraction_devise import extraire_donnees_conversion
+
+def convertir_operation(message):
+    """
+    Fonction adaptée au chatbot
+    - extrait les données depuis le message
+    - appelle convertir_devise
+    - retourne un format structuré
+    """
+
+    data = extraire_donnees_conversion(message)
+
+    if not data:
+        return None
+
+    resultat = convertir_devise(
+        data["montant"],
+        data["devise_source"],
+        data["devise_cible"]
+    )
+
+    if resultat is None:
+        return None
+
+    return {
+        "montant": data["montant"],
+        "source": data["devise_source"],
+        "cible": data["devise_cible"],
+        "resultat": round(resultat, 2)
+    }
