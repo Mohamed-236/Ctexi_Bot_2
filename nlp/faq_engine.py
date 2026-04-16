@@ -14,6 +14,8 @@ import logging
 
 from models.suivi_colis import recuperer_colis
 from nlp.preprocess_colis import est_code_colis
+from nlp.netoyage import nettoyer_message
+
 
 from services.conversion_service import convertir_devise
 from nlp.extraction_devise import extraire_donnees_conversion
@@ -26,11 +28,11 @@ from nlp.extraction_devise import extraire_donnees_conversion
 
 from router.operation_router import detecter_operation
 from services.tracking_service import get_colis_info
-from services.conversion_service import convertir_operation
+from services.controler.conversion_controler import convertir_operation
 from services.agent_service import get_agent
 from services.service_info import get_services
 #===============================================================
-
+from nlp.simple_intent import detecter_intent_light, repondre_intent_light
 
 
 
@@ -156,18 +158,38 @@ def rechercher_faq_top_k(embedding_message, top_k=5):
 # MOTEUR PRINCIPAL
 # ==========================================================
 
-
 def trouver_meilleure_correspondance(message_utilisateur, id_user):
 
     logging.info(f"Message: {message_utilisateur}")
 
-    #
-    operation = detecter_operation(message_utilisateur)
+    # ==========================
+    # ROUTER CENTRAL
+    # ==========================
+    message_clean = nettoyer_message(message_utilisateur)
 
 
-    # Service de suivi_colis
+    # ==========================
+    # INTENTS SIMPLES (PRIORITÉ MAX)
+    # ==========================
+    intent_light = detecter_intent_light(message_clean)
+
+    if intent_light:
+        return {
+            "type": intent_light,
+            "reponse": repondre_intent_light(intent_light),
+            "trouve": True
+        }
+
+
+
+    operation = detecter_operation(message_clean)
+
+    # ==========================
+    # TRACKING
+    # ==========================
     if operation == "suivi_colis":
-        info = get_colis_info(message_utilisateur, id_user)
+
+        info = get_colis_info(message_clean, id_user)
 
         if info:
             return {
@@ -178,53 +200,57 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
             }
 
         return {
-            "type": "erreur_suivi_colis",
-            "reponse": "Code invalide",
+            "type": "tracking_request",
+            "reponse": "Veuillez entrer votre code colis.",
             "trouve": False
         }
-    
 
-    
-    
- 
-
-    # service de contact agent
-    if operation == "contact_agent":
-        agent = get_agent()
-
-        return {
-            "type": "agent",
-            "reponse": "Je vous mets en relation avec un agent",
-            "agent": agent,
-            "trouve": True
-        }
-
-
+    # ==========================
+    # CONVERSION
+    # ==========================
     if operation == "conversion":
-        result = convertir_operation(message_utilisateur)
+        result = convertir_operation(message_clean)
 
+        # ✅ CAS 1 : conversion complète
         if result:
-            logging.info(f"Conversion OK: {result}")
-
             return {
                 "type": "conversion",
                 "reponse": f"{result['montant']} {result['source']} ≈ {result['resultat']} {result['cible']}",
                 "trouve": True
             }
 
+        # ✅ CAS 2 : intention détectée MAIS données manquantes
         return {
-            "type": "erreur_conversion",
-            "reponse": "Je n’ai pas pu comprendre la conversion demandée.",
+            "type": "conversion_help",
+            "reponse": "Veuillez préciser le montant et les devises.\nExemple : 5000 FCFA en EUR",
+            "trouve": True
+        }
+    # ==========================
+    # AGENT
+    # ==========================
+    if operation == "contact_agent":
+
+        agent = get_agent()
+
+        if agent:
+            return {
+                "type": "agent",
+                "reponse": "Je vous mets en relation avec un agent",
+                "agent": agent,
+                "trouve": True
+            }
+
+        return {
+            "type": "fallback",
+            "reponse": "Aucun agent disponible.",
             "trouve": False
         }
 
-
-
-    
-        
-    
-    # service de servive info
+    # ==========================
+    # SERVICES
+    # ==========================
     if operation == "service_info":
+
         services = get_services()
 
         return {
@@ -233,66 +259,15 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
             "services": services,
             "trouve": True
         }
-            
 
-
+    # ==========================
+    # FAQ (IA)
+    # ==========================
     embedding_message = modele_embedding.encode(
-        [message_utilisateur],
+        [message_clean],
         normalize_embeddings=True
     )
 
-    # ==========================
-    # COLIS
-    # ==========================
-    if est_code_colis(message_utilisateur):
-        colis = recuperer_colis(message_utilisateur, id_user)
-
-        if colis:
-            code, statut, type_colis, modes, derniere_maj = colis
-
-            return {
-                "type": "tracking",
-                "reponse": "Voici votre colis",
-                "data": {
-                    "code": code,
-                    "statut": statut,
-                    "transport": modes,
-                    "type": type_colis,
-                    "derniere_maj": derniere_maj.strftime("%Y-%m-%d %H:%M")
-                },
-                "trouve": True
-            }
-
-        return {
-            "type": "erreur_suivi_colis",
-            "reponse": "Code invalide",
-            "trouve": False
-        }
-
-    # ==========================
-    # CONVERSION
-    # ==========================
-    conv = extraire_donnees_conversion(message_utilisateur)
-
-    if conv:
-        res = convertir_devise(conv["montant"], conv["devise_source"], conv["devise_cible"])
-
-        if res:
-            return {
-                "type": "conversion",
-                "reponse": f"{conv['montant']} {conv['devise_source']} ≈ {round(res,2)} {conv['devise_cible']}",
-                "trouve": True
-            }
-
-        return {
-            "type": "erreur_conversion",
-            "reponse": "Erreur conversion",
-            "trouve": False
-        }
-
-    # ==========================
-    # FAQ (INTELLIGENCE PRINCIPALE)
-    # ==========================
     faq, score = rechercher_faq_top_k(embedding_message)
 
     if faq:
@@ -311,20 +286,20 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
         }
 
     # ==========================
-    # AGENT FALLBACK
+    # FALLBACK FINAL
     # ==========================
-    agent = recuperer_agent_par_intention(1)
+    agent = get_agent()
 
     if agent:
         return {
             "type": "agent",
-            "reponse": "Je vous mets en relation avec un agent",
+            "reponse": "Je ne suis pas sûr. Voulez-vous contacter un agent ?",
             "agent": agent,
             "trouve": False
         }
 
     return {
         "type": "fallback",
-        "reponse": "Je ne comprends pas votre demande",
+        "reponse": "Je ne comprends pas votre demande.",
         "trouve": False
     }
