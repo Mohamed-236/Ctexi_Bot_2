@@ -14,6 +14,12 @@ def recuperer_colis(code_colis, id_user):
     """, (code_colis, id_user))
     
     colis = cur.fetchone()
+
+
+    # 🔥 DEBUG ICI
+    print("DEBUG SQL → code:", code_colis)
+    print("DEBUG SQL → user:", id_user)
+    print("DEBUG SQL → resultat:", colis)
     
     cur.close()
     conn.close()

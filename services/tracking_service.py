@@ -1,12 +1,13 @@
 from models.suivi_colis import recuperer_colis
+from nlp.preprocess_colis import est_code_colis
 
-def get_colis_info(code_colis, user_id):
-    """
-    Aujourd'hui: DB simulée
-    Demain: API mobile
-    """
+def get_colis_info(message, user_id):
+    code = est_code_colis(message)
 
-    colis = recuperer_colis(code_colis, user_id)
+    if not code:
+        return None
+
+    colis = recuperer_colis(code, user_id)
 
     if not colis:
         return None
@@ -16,7 +17,8 @@ def get_colis_info(code_colis, user_id):
     return {
         "code": code,
         "statut": statut,
-        "type": type_colis,
+        "type_colis": type_colis,
         "transport": modes,
         "derniere_maj": derniere_maj.strftime("%Y-%m-%d %H:%M")
     }
+

@@ -90,6 +90,7 @@ SELECT * FROM auth.agents;
 
 -------------------------------------SCHEMA CHATBOT--------------------------------------------------------------
 
+
 --table faq
 
 CREATE TABLE chatbot.faq(
@@ -100,6 +101,105 @@ CREATE TABLE chatbot.faq(
     embedding vector(384),
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+---------------------------------------------------------Table pour les intent simple---------------------------
+
+
+-- Entr utilisateur
+CREATE TABLE chatbot.pattern (
+    id_pattern SERIAL PRIMARY KEY,
+    id_intent INT REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
+    pattern TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+--reponse lier a l'entrer
+CREATE TABLE chatbot.response (
+    id_response SERIAL PRIMARY KEY,
+    id_intent INT REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
+    response TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+----------------------------------------insertion-----------------------------------------------------------------
+
+--pattern
+INSERT INTO chatbot.pattern (id_intent, pattern) VALUES
+(1, 'salut'),
+(1, 'bonjour'),
+(1, 'bonsoir'),
+(1, 'coucou'),
+(1, 'cc'),
+(1, 'hello');
+
+
+
+
+INSERT INTO chatbot.pattern (id_intent, pattern) VALUES
+(2, 'merci'),
+(2, 'merci beaucoup'),
+(2, 'thanks'),
+(2, 'thx');
+
+
+-- response
+INSERT INTO chatbot.response (id_intent, response) VALUES
+(1, 'Bonjour 👋 Comment puis-je vous aider ?'),
+(1, 'Salut 😊 Que puis-je faire pour vous ?'),
+(1, 'Hello 👋 Je suis là pour vous aider !');
+
+
+
+INSERT INTO chatbot.response (id_intent, response) VALUES
+(2, 'Avec plaisir 😊'),
+(2, 'Je vous en prie 👍'),
+(2, 'Toujours là pour vous aider 😉');
+
+----------------------------------------------------------------------------------------------------------------
+
+
+
+-------------------------------------------Table operation------------------------------------------------
+
+--type d'operation.
+CREATE TABLE chatbot.operation (
+    id_operation SERIAL PRIMARY KEY,
+    nom VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+-- Ce que le user dit.
+CREATE TABLE chatbot.operation_pattern (
+    id_pattern SERIAL PRIMARY KEY,
+    id_operation INT REFERENCES chatbot.operation(id_operation) ON DELETE CASCADE,
+    pattern TEXT NOT NULL,
+    weight INT DEFAULT 1,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -141,7 +241,6 @@ CREATE TABLE chatbot.intention(
     nom VARCHAR(100) UNIQUE NOT NULL,
     type_intent VARCHAR(50) NOT NULL,
     descriptions TEXT,
-    embedding vector(384),
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -158,11 +257,6 @@ SELECT * FROM chatbot.intention;
 
 -- Table reponse_intention
 
-CREATE TABLE chatbot.reponse_intention(
-    id_rep_intent SERIAL PRIMARY KEY,
-    id_intent INTEGER NOT NULL REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
-    reponse TEXT NOT NULL
-);
 
 
 
@@ -462,8 +556,7 @@ VALUES
 (
 'salutation',
 'social',
-'Intentions de salutation et interaction sociale initiale. L’utilisateur veut dire bonjour, commencer une conversation ou engager un contact poli. 
-Exemples de phrases utilisateur : "salut", "bonjour", "bonsoir", "ça va ?", "cc", "coucou", "hello", "yo", "ça dit quoi"'
+'Intentions de début de conversation et de salutation.'
 );
 
 
@@ -473,8 +566,7 @@ VALUES
 (
 'au_revoir',
 'social',
-'Intentions de fin de conversation. L’utilisateur veut quitter la discussion ou dire au revoir. 
-Exemples de phrases utilisateur : "au revoir", "bye", "a plus", "je pars", "bonne journée", "on se capte", "à bientôt", "bonne soirée"'
+'Intentions de fin de conversation ou de prise de congé.'
 
 );
 
@@ -486,8 +578,7 @@ VALUES
 (
 'remerciement',
 'social',
-'Intentions où l’utilisateur exprime sa gratitude ou remercie après une aide. 
-Exemples de phrases utilisateur : "merci", "merci beaucoup", "grand merci", "thanks", "c’est gentil", "merci bien", "je vous remercie"'
+'Intentions exprimant la gratitude ou les remerciements.'
 );
 
 
@@ -497,8 +588,7 @@ VALUES
 (
 'validation',
 'social',
-'Intentions où l’utilisateur confirme ou valide une information. 
-Exemples de phrases utilisateur : "ok", "d’accord", "ça marche", "c’est bon", "cool", "parfait", "ok merci", "validé"'
+'Intentions de confirmation ou validation d’une information.'
 
 );
 
@@ -512,86 +602,8 @@ VALUES
 (
 'faq_buy',
 'information',
+'Questions sur le service d’achat de produits en Chine (processus, commande, paiement, livraison).'
 
-'
-comment fonctionne ctexi buy
-c’est quoi votre service achat
-explique moi votre service achat chine
-comment vous travaillez pour acheter en chine
-
-comment acheter en chine
-je veux acheter en chine
-comment faire pour acheter un produit en chine
-je veux acheter un produit en chine avec vous
-comment commander produit chine
-
-etapes achat chine
-les etapes pour acheter
-comment se passe un achat chez vous
-processus achat chine comment ca marche
-
-vous pouvez acheter pour moi
-est ce que vous achetez pour moi
-je veux que vous achetez pour moi
-vous pouvez commander pour moi en chine
-
-comment passer une commande
-comment faire une commande
-je veux faire une commande chez vous
-comment commander avec vous
-comment envoyer ma commande
-
-commande chine dure combien de temps
-delai commande chine
-combien de jours pour recevoir commande chine
-temps livraison commande chine
-
-vous verifiez les produits
-controle qualite produit chine
-est ce que vous controler les produits
-verification produit avant envoi
-
-produit defectueux que faire
-si produit gate que faire
-si produit probleme que faire
-produit non conforme solution
-j’ai recu mauvais produit
-
-vous avez assurance
-assurance transport produit
-est ce que colis est assure
-assurance commande chine
-
-livraison comment ca se passe
-livraison chine burkina comment faire
-comment vous livrez les produits
-transport produit chine comment ca marche
-livraison avion ou bateau
-
-annuler commande possible
-je peux annuler commande
-comment annuler une commande
-annulation commande chine
-
-quel produit vous pouvez acheter
-vous pouvez acheter quoi en chine
-type de produit chine
-est ce que vous achetez tout type produit
-
-comment payer commande
-paiement commande comment faire
-comment je paie commande chine
-mode de paiement commande
-
-est ce fiable d’acheter avec vous
-est ce que je peux vous faire confiance
-achat chine avec vous c’est sur
-est ce que votre service est fiable
-vous etes fiable pour achat chine
-
-Synonymes :
-acheter, achat, commande, produit, fournisseur, chine, livraison, transport, payer, paiement, assurance, controle, qualite, verifier
-'
 );
 
 
@@ -602,57 +614,7 @@ VALUES
 (
 'faq_travel',
 'information',
-
-'
-je veux voyager en chine
-comment aller en chine
-je veux partir en chine
-comment faire pour aller en chine
-procedure voyage chine
-
-comment obtenir visa chine
-visa chine comment faire
-comment faire visa chine
-je veux visa chine
-demande visa chine comment faire
-
-documents visa chine
-quels papiers pour visa chine
-dossier visa chine
-pieces pour visa chine
-quels documents fournir visa chine
-
-visa chine dure combien de temps
-delai visa chine
-visa chine prend combien de jours
-temps traitement visa chine
-
-billet avion chine comment faire
-je veux billet avion chine
-reservation billet chine
-prix billet avion chine
-acheter billet chine
-
-hotel chine comment reserver
-je veux hotel en chine
-ou dormir en chine
-logement chine comment ca marche
-hebergement chine
-je vais loger ou en chine
-
-assistance aeroport chine
-accueil aeroport chine
-quelquun peut me recuperer aeroport chine
-service accueil chine
-
-modifier reservation chine
-changer billet avion chine
-annuler reservation chine
-modifier hotel chine
-
-Synonymes :
-visa, billet, avion, hotel, logement, hebergement, dormir, loger, aeroport, reservation, voyage, chine
-'
+'Questions liées au voyage en Chine (visa, billet, hébergement, procédures).'
 );
 
 
@@ -664,69 +626,7 @@ VALUES
 (
 'faq_academie',
 'information',
-
-'
-quelles formations vous proposez
-vous faites quelles formations
-c’est quoi vos formations
-je veux connaitre vos formations
-vous formez dans quoi
-
-
-je veux apprend import export
-apprendre le commerce international
-je veux me lancer dans le business
-formation business chine burkina
-je veux devenir importateur
-apprendre a importer depuis la chine
-je veux lancer mon business import
-
-je veux me former chez vous
-je veux apprendre import export
-je veux apprendre achat chine
-je veux apprendre business chine
-je veux faire une formation chez vous
-
-comment s’inscrire a une formation
-comment faire inscription formation
-je veux m’inscrire formation
-inscription formation comment ca marche
-je fais comment pour m’inscrire
-
-formation en ligne ou presentiel
-est ce que formation est en ligne
-je peux suivre a distance
-vous faites cours en ligne
-formation se passe comment
-
-formation dure combien de temps
-duree formation combien de jours
-combien de temps pour finir formation
-formation prend combien de temps
-
-formation commence quand
-date debut formation
-prochaine session formation quand
-
-formation coute combien
-prix formation combien
-tarif formation c’est combien
-je dois payer combien pour formation
-
-est ce que vous donnez certificat
-il y a certificat apres formation
-je vais avoir attestation
-diplome formation disponible
-
-vous accompagnez les apprenants
-il y a suivi apres formation
-est ce que vous aidez apres formation
-accompagnement apres formation comment ca marche
-vous suivez les etudiants
-
-Synonymes :
-formation, apprendre, cours, coaching, academie, etudier, certificat, attestation, inscription, apprendre, formation en ligne
-'
+'Questions sur les formations proposées (inscription, contenu, durée, prix).'
 );
 
 
@@ -737,64 +637,7 @@ VALUES
 (
 'faq_cargo',
 'information',
-
-'
-envoyer colis chine burkina
-comment envoyer marchandise chine burkina
-transport chine burkina comment faire
-je veux envoyer colis depuis chine
-faire venir produit chine burkina
-livraison chine burkina
-
-transport dure combien de temps
-delai livraison chine burkina
-colis arrive en combien de jours
-temps transport chine burkina
-livraison prend combien de temps
-
-transport coute combien
-prix transport chine burkina
-frais expedition chine
-je vais payer combien transport
-tarif envoi colis chine
-
-produits interdits chine
-quels produits sont interdits
-je peux envoyer quel produit
-produit autorise ou non chine
-
-frais douane comment ca marche
-douane burkina colis chine
-est ce que je dois payer douane
-taxe douane colis chine
-
-colis en retard pourquoi
-mon colis tarde a arriver
-retard livraison chine
-pourquoi colis bloque
-
-colis en transit ca veut dire quoi
-mon colis est en route
-colis en chemin chine burkina
-statut colis transit signification
-
-code colis ne marche pas
-code suivi invalide
-je n’arrive pas a suivre colis
-probleme suivi colis
-
-suivre plusieurs colis
-j’ai plusieurs colis comment faire
-suivi plusieurs colis possible
-
-colis gate que faire
-colis abime que faire
-colis casse solution
-produit endommage livraison
-
-Synonymes :
-colis, marchandise, transport, livraison, expedition, chine, burkina, douane, frais, prix, delai, transit, suivi
-'
+'Questions sur le transport de colis Chine–Burkina (délais, coûts, douane, suivi).'
 );
 
 -----------------------------------suivi_colis ==>9
@@ -804,30 +647,8 @@ VALUES
 (
 'suivi_colis',
 'operation',
-'Suivi de colis et vérification de statut d’expédition.
+'Suivi et vérification du statut d’un colis ou d’une commande.'
 
-Exemples utilisateur :
-"ou est mon colis"
-"je veux suivre mon colis"
-"suivi colis"
-"verifier mon colis"
-"mon colis est ou"
-"je veux voir mon colis"
-"tracking colis"
-"suivre commande"
-"statut colis"
-"localiser mon colis"
-"mon colis est arrive ou"
-"je veux savoir ou se trouve mon colis"
-"suivi expedition"
-"tracking commande chine"
-"voir statut livraison"
-"mon colis est en cours ou"
-"colis tracking"
-"je veux verifier livraison"
-"suivre livraison chine"
-"ou en est ma commande"
-'
 );
 
 
@@ -839,31 +660,8 @@ VALUES
 (
 'contact_agent',
 'operation',
-'Demande de contact avec un agent humain ou assistance directe.
+'Demande de mise en relation avec un agent humain ou assistance directe.'
 
-Exemples utilisateur :
-"je veux parler a un agent"
-"je veux parler a quelqu’un"
-"contact service client"
-"je veux un conseiller"
-"parler a un humain"
-"support client"
-"besoin d’aide"
-"aidez moi"
-"je ne comprends pas"
-"expliquez moi mieux"
-"je veux plus d’explication"
-"votre reponse ne m’aide pas"
-"je ne suis pas satisfait"
-"je veux contacter le support"
-"comment vous contacter"
-"je veux votre whatsapp"
-"donne moi votre numero"
-"je veux appeler un agent"
-"je veux discuter avec quelqu’un"
-"assistance urgente"
-"aide humaine"
-'
 );
 
 --------------------------------service_info ==> 11
@@ -872,26 +670,7 @@ VALUES
 (
 'service_info',
 'operation',
-'Demande d’information sur les services CTEXI et sélection interactive d’un service.
-
-Exemples utilisateur :
-"quels sont vos services"
-"vous faites quoi"
-"je veux connaitre vos services"
-"c’est quoi vos services"
-"vous proposez quoi"
-"je veux voir vos services"
-"explique vos services"
-"vos offres"
-"que faites-vous"
-"je peux faire quoi avec vous"
-"je veux choisir un service"
-"donne moi vos services"
-"liste des services"
-"présente tes services"
-"services disponibles"
-"CTEXI c’est quoi"
-'
+'Demande d’information générale sur les services proposés par l’entreprise.'
 );
 
 
@@ -903,34 +682,7 @@ VALUES
 (
 'taux_change',
 'operation',
-'Gestion des paiements internationaux, conversion de devise RMB (yuan) vers FCFA, délais de transfert, sécurité des transactions et demande de paiement via CTEXI Pay.
-
-Exemples utilisateur :
-"combien de temps prend un transfert"
-"un transfert dure combien de jours"
-"delai paiement chine"
-"je vais attendre combien de temps pour mon paiement"
-"comment calculer le paiement"
-"convertir yuan en fcfa"
-"je veux savoir combien je vais payer"
-"prix en fcfa"
-"taux de change chine burkina"
-"rmb en fcfa"
-"comment faire un paiement"
-"payer fournisseur chine"
-"envoyer de l’argent en chine"
-"je veux payer en chine"
-"comment payer un fournisseur chinois"
-"vous pouvez payer pour moi"
-"paiement chine sécurisé"
-"est ce fiable de payer avec vous"
-"preuve de paiement"
-"reçu de paiement"
-"justificatif paiement"
-"transfert d’argent chine burkina"
-"ctexi pay comment ça marche"
-"comment fonctionne le paiement international"
-'
+'Conversion de devises et gestion des paiements internationaux.'
 );
 
 

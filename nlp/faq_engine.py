@@ -165,13 +165,13 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
     # ==========================
     # ROUTER CENTRAL
     # ==========================
-    message_clean = nettoyer_message(message_utilisateur)
+    # message_clean = nettoyer_message(message_utilisateur)
 
 
     # ==========================
     # INTENTS SIMPLES (PRIORITÉ MAX)
     # ==========================
-    intent_light = detecter_intent_light(message_clean)
+    intent_light = detecter_intent_light(message_utilisateur)
 
     if intent_light:
         return {
@@ -182,14 +182,14 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
 
 
 
-    operation = detecter_operation(message_clean)
+    operation = detecter_operation(message_utilisateur)
 
     # ==========================
     # TRACKING
     # ==========================
     if operation == "suivi_colis":
 
-        info = get_colis_info(message_clean, id_user)
+        info = get_colis_info(message_utilisateur, id_user)
 
         if info:
             return {
@@ -199,17 +199,27 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
                 "trouve": True
             }
 
+        code = est_code_colis(message_utilisateur)
+
+        if code:
+            return {
+                "type": "tracking_not_found",
+                "reponse": "Aucun colis trouvé ou code non attribué a l'utilisateur connecté.",
+                "trouve": False
+            }
+
         return {
             "type": "tracking_request",
-            "reponse": "Veuillez entrer votre code colis.",
-            "trouve": False
+            "reponse": "Veuillez entrer votre code colis CTExI pour voir les informations:",
+            "trouve": True
         }
+    
 
     # ==========================
     # CONVERSION
     # ==========================
     if operation == "conversion":
-        result = convertir_operation(message_clean)
+        result = convertir_operation(message_utilisateur)
 
         # ✅ CAS 1 : conversion complète
         if result:
@@ -264,7 +274,7 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
     # FAQ (IA)
     # ==========================
     embedding_message = modele_embedding.encode(
-        [message_clean],
+        [message_utilisateur],
         normalize_embeddings=True
     )
 
@@ -293,7 +303,7 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
     if agent:
         return {
             "type": "agent",
-            "reponse": "Je ne suis pas sûr. Voulez-vous contacter un agent ?",
+            "reponse": "Je ne suis pas sûr de comprendre.Merci de contacter un agent pour plus d'eclaircissement.",
             "agent": agent,
             "trouve": False
         }
