@@ -42,10 +42,41 @@ if (loginForm) {
 // ==========================================================
 // CRÉER UN ÉLÉMENT MESSAGE
 // ==========================================================
+
+
+// ==========================================================
+// CRÉER MESSAGE
+// ==========================================================
+const BOT_AVATAR = `
+<svg class="bot-avatar" xmlns="http://www.w3.org/2000/svg"
+width="50" height="50" viewBox="0 0 1024 1024">
+  <path d="M738.3 287.6H285.7c-59 0-106.8 47.8-106.8 106.8v303.1
+  c0 59 47.8 106.8 106.8 106.8h81.5v111.1c0 .7.8 1.1 1.4.7
+  l166.9-110.6 41.8-.8h117.4l43.6-.4
+  c59 0 106.8-47.8 106.8-106.8V394.5
+  c0-59-47.8-106.9-106.8-106.9z"/>
+</svg>
+`;
+
 const createMessageElement = (content, ...classes) => {
+
   const div = document.createElement("div");
+
   div.classList.add("message", ...classes);
-  div.innerHTML = content;
+
+  if (classes.includes("bot-message")) {
+
+    div.innerHTML = `
+      ${BOT_AVATAR}
+      ${content}
+    `;
+
+  } else {
+
+    div.innerHTML = content;
+
+  }
+
   return div;
 };
 
@@ -241,15 +272,17 @@ const handleOutgoingMessage = (e) => {
 
   const userMessageDiv = createMessageElement(`<div class="message-text">${userData.message}</div>`, "user-message");
   chatBody.appendChild(userMessageDiv);
-
+    
   const botThinkingDiv = createMessageElement(
-    `<svg class="bot-avatar" xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 1024 1024">
-      <path d="M738.3 287.6H285.7c-59 0-106.8 47.8-106.8 106.8v303.1c0 59 47.8 106.8 106.8 106.8h81.5v111.1c0 .7.8 1.1 1.4.7l166.9-110.6 41.8-.8h117.4l43.6-.4c59 0 106.8-47.8 106.8-106.8V394.5c0-59-47.8-106.9-106.8-106.9z"/>
-    </svg>
-    <div class="message-text">
-      <div class="thinking-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    `<div class="message-text">
+        <div class="thinking-indicator">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
     </div>`,
-    "bot-message", "thinking"
+    "bot-message",
+    "thinking"
   );
   chatBody.appendChild(botThinkingDiv);
   chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
@@ -359,3 +392,11 @@ async function displayAgentButtons(agent = { whatsapp: "", email: "", telephone:
     await new Promise(r => setTimeout(r, delay));
   }
 }
+
+
+// Ouverture automatique pop up
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    document.body.classList.add("show-chatbot");
+  }, 1200);
+});

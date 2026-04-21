@@ -48,10 +48,14 @@ def chatbot_response():
     # Sauvegarde automatique dans la DB
     try:
         sauvegarder_conversation(
+             
             id_user=request.user_id,
-            message_utilisateur=message,
+            message_user=message,
             reponse_bot=result.get("reponse", ""),
-            intention=result.get("intention")
+
+            id_intent=result.get("id_intent"),
+            id_operation=result.get("id_operation")
+
         )
     except Exception as e:
             print(f" Erreur lors de la sauvegarde pour user_id={request.user_id} : {e}")

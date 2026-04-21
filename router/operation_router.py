@@ -1,46 +1,14 @@
 
 from rapidfuzz import fuzz
+from models.db_connect import get_db_connection
 from nlp.preprocess_colis import est_code_colis
 from nlp.extraction_devise import extraire_donnees_conversion
 
 SEUIL = 70
 
-INTENTIONS = {
-    "suivi_colis": [
-        "suivre mon colis",
-        "ou est mon colis",
-        "localiser mon colis",
-        "tracking colis",
-        "suivi colis",
-        "mon colis est ou"
-    ],
-    "conversion": [
-        "conversion",
-        "convertir",
-        "converti",
-        "taux de change",
-        "changer argent",
-        "convertir devise"
-    ],
-    "contact_agent": [
-        "parler a un agent",
-        "contacter support",
-        "service client",
-        "assistance",
-        "humain",
-        "agent"
-    ],
-    "service_info": [
-        "vos services",
-        "quels services",
-        "offres",
-        "que proposez vous",
-        "services disponibles"
-    ]
-}
 
 def detecter_operation(message: str):
-    message_low = message.lower()
+    message_normalise = message.lower()
 
     # =========================
     # PRIORITE STRUCTURE
@@ -49,26 +17,45 @@ def detecter_operation(message: str):
     if est_code_colis(message):
         return "suivi_colis"
 
-    # 🔥 IMPORTANT : conversion même si incomplète
     if extraire_donnees_conversion(message):
         return "conversion"
+
+    # =========================
+    # RECUPERATION DES PHRASES DEPUIS LA BD
+    # =========================
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT o.nom_operation, p.phrase
+        FROM chatbot.operation_phrase p
+        JOIN chatbot.operation o ON o.id_operation = p.id_operation
+        WHERE p.est_actif = TRUE AND o.est_actif = TRUE
+    """)
+
+    resultats = cur.fetchall()
+  
+    cur.close()
+    conn.close()
 
     # =========================
     # FUZZY MATCHING
     # =========================
 
-    best_intent = None
-    best_score = 0
+    meilleure_operation = None
+    meilleur_score = 0
 
-    for intent, phrases in INTENTIONS.items():
-        for phrase in phrases:
-            score = fuzz.partial_ratio(message_low, phrase)
+    for nom_operation, phrase in resultats:
+        score = fuzz.partial_ratio(message_normalise, phrase.lower())
 
-            if score > best_score:
-                best_score = score
-                best_intent = intent
+        if score > meilleur_score:
+            meilleur_score = score
+            meilleure_operation = nom_operation
 
-    if best_score >= SEUIL:
-        return best_intent
+    if meilleur_score >= SEUIL:
+        return meilleure_operation
 
     return None
+
+

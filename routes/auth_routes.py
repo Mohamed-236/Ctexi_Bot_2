@@ -90,9 +90,31 @@ def token_required(f):
             return jsonify({"status": "error", "message": "Vous devez être connecté"}), 401
     return decorated
 
-# ==================================================================
+
+
+# ========================================================
+# ROUTE REGISTER : Api : http://localhost:5000/api/auth/
+# ========================================================
+@auth_bp.route("/", methods=["GET"])
+def accueil():
+    return render_template("index.html")
+
+
+
+
+# ================================================================
+# ROUTE REGISTER  : Api : http://localhost:5000/api/auth/dashboard
+# ================================================================
+@auth_bp.route("/dashboard", methods=["GET"])
+def dashboard():
+    return render_template("dashboard.html")
+
+
+
+
+# ===============================================================
 # ROUTE REGISTER  : Api : http://localhost:5000/api/auth/register
-# ==================================================================
+# ===============================================================
 @auth_bp.route('/register', methods=["GET", "POST"])
 def register():
     # GET → page HTML
@@ -197,13 +219,13 @@ def login():
         session['user_id'] = user['id_user']
         session['user_name'] = user['nom']
         flash("Connexion réussie !!", "success")
-        return redirect(url_for('auth.index'))
+        return redirect(url_for('auth.chatbot'))
 
     if request.is_json:
         return jsonify({"status": "error", "message": "Email ou mot de passe incorrect"}), 401
 
     flash("Email ou mot de passe incorrect", "danger")
-    return redirect(url_for('auth.login'))
+    return redirect(url_for('auth.chatbot'))
 
 
 # =============================================================
@@ -218,7 +240,7 @@ def logout():
         return jsonify({"status": "success", "message": "Déconnexion réussie"}), 200
 
     flash("Vous êtes déconnecté avec succès", "success")
-    return redirect(url_for("auth.login"))
+    return redirect(url_for("auth.accueil"))
 
 
 
@@ -227,10 +249,10 @@ def logout():
 # ROUTE INDEX : Api : http://localhost:5000/api/auth/index
 # =============================================================
 
-@auth_bp.route("/index", methods=["GET"]) 
+@auth_bp.route("/chatbot", methods=["GET"]) 
 def index():
     user_name = session.get('user_name', 'Utilisateur')
-    return render_template('index.html', user_name=user_name)
+    return render_template('chatbot.html', user_name=user_name)
 
 
 # =============================================================

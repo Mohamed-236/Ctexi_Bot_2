@@ -7,7 +7,7 @@
 
 body {
     height: 100vh;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    background: linear-gradient(135deg, #2E6FE6, #c8c7ff);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -57,8 +57,8 @@ body {
 button {
     width: 100%;
     padding: 12px;
-    background: #1e3c72;
-    color: white;
+    background: #6967e6;
+    color: rgb(231, 231, 231);
     border: none;
     border-radius: 6px;
     font-weight: bold;

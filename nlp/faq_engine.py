@@ -177,8 +177,12 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
         return {
             "type": intent_light,
             "reponse": repondre_intent_light(intent_light),
+            "id_intent": None,
+            "id_operation": None,
+            "confidence": 0.95,
             "trouve": True
         }
+        
 
 
 
@@ -286,12 +290,18 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
                 "type": "faq_incertain",
                 "reponse": faq["faq"]["reponse_bot"],
                 "suggestions": faq["suggestions"],
+                "id_intent": faq["faq"]["id_intent"],
+                "id_operation": None,
+                "confidence": score,
                 "trouve": True
             }
 
         return {
             "type": "faq",
             "reponse": faq["faq"]["reponse_bot"],
+            "id_intent": faq["faq"]["id_intent"],
+            "id_operation": None,
+            "confidence": score,
             "trouve": True
         }
 

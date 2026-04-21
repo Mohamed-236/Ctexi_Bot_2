@@ -50,7 +50,7 @@ loginForm.addEventListener("submit", async (e) => {
         localStorage.setItem("user_name", data.user.nom);
 
         alert("Connexion réussie !");
-        window.location.href = "/api/auth/index"; // Redirection vers la page principale
+        window.location.href = "/api/auth/chatbot"; // Redirection vers la page principale
 
     } catch (err) {
         console.error(err);

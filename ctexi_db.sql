@@ -10,7 +10,6 @@ SET search_path TO public;
 
 -- Mdp:postgres: Yakfis@226
 
-SELECT * FROM chatbot.faq;
 
 
 -- ---------AUTH
@@ -49,11 +48,8 @@ CREATE TABLE auth.users(
     
 ); 
 
-SELECT * FROM auth.users;
 
 --Table agents
-DROP TABLE auth.agents CASCADE;
-
 CREATE TABLE auth.agents(
     id_agent SERIAL PRIMARY KEY,
     id_intent INTEGER REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
@@ -64,10 +60,8 @@ CREATE TABLE auth.agents(
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-SELECT * FROM auth.agents;
 ----------------------------------NSERTION DES AGENTS EXEMPLE--------------------------------------
 
-TRUNCATE TABLE auth.agents RESTART IDENTITY;
 
 INSERT INTO auth.agents ( id_intent, whatsapp, telephone, email)
 VALUES
@@ -85,7 +79,6 @@ VALUES
 (12,'22674381094', '+22669090991',  'yakfismokonzi@gmail.com');
 
 
-SELECT * FROM auth.agents;
 
 
 -------------------------------------SCHEMA CHATBOT--------------------------------------------------------------
@@ -103,101 +96,83 @@ CREATE TABLE chatbot.faq(
 );
 
 
----------------------------------------------------------Table pour les intent simple---------------------------
 
 
--- Entr utilisateur
-CREATE TABLE chatbot.pattern (
-    id_pattern SERIAL PRIMARY KEY,
-    id_intent INT REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
-    pattern TEXT NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-
---reponse lier a l'entrer
-CREATE TABLE chatbot.response (
-    id_response SERIAL PRIMARY KEY,
-    id_intent INT REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
-    response TEXT NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-----------------------------------------insertion-----------------------------------------------------------------
-
---pattern
-INSERT INTO chatbot.pattern (id_intent, pattern) VALUES
-(1, 'salut'),
-(1, 'bonjour'),
-(1, 'bonsoir'),
-(1, 'coucou'),
-(1, 'cc'),
-(1, 'hello');
-
-
-
-
-INSERT INTO chatbot.pattern (id_intent, pattern) VALUES
-(2, 'merci'),
-(2, 'merci beaucoup'),
-(2, 'thanks'),
-(2, 'thx');
-
-
--- response
-INSERT INTO chatbot.response (id_intent, response) VALUES
-(1, 'Bonjour 👋 Comment puis-je vous aider ?'),
-(1, 'Salut 😊 Que puis-je faire pour vous ?'),
-(1, 'Hello 👋 Je suis là pour vous aider !');
-
-
-
-INSERT INTO chatbot.response (id_intent, response) VALUES
-(2, 'Avec plaisir 😊'),
-(2, 'Je vous en prie 👍'),
-(2, 'Toujours là pour vous aider 😉');
-
-----------------------------------------------------------------------------------------------------------------
-
-
-
--------------------------------------------Table operation------------------------------------------------
-
---type d'operation.
+-- Table des opérations
 CREATE TABLE chatbot.operation (
     id_operation SERIAL PRIMARY KEY,
-    nom VARCHAR(100) UNIQUE NOT NULL,
-    description TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    nom_operation VARCHAR(100) UNIQUE NOT NULL,
+    descriptions TEXT,
+    est_actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
+SELECT * FROM chatbot.operation;
 
--- Ce que le user dit.
-CREATE TABLE chatbot.operation_pattern (
-    id_pattern SERIAL PRIMARY KEY,
+SELECT * FROM chatbot.operation_phrase;
+
+
+-- Table des phrases utilisateur (patterns)
+CREATE TABLE chatbot.operation_phrase (
+    id_phrase SERIAL PRIMARY KEY,
     id_operation INT REFERENCES chatbot.operation(id_operation) ON DELETE CASCADE,
-    pattern TEXT NOT NULL,
-    weight INT DEFAULT 1,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id_intent INT REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
+    phrase TEXT NOT NULL,
+    est_actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
+DROP TABLE chatbot.operation_phrase;
+
+------------------------------Insertion dans les tables operations--------------------------------------
+
+
+INSERT INTO chatbot.operation (nom_operation) VALUES
+('suivi_colis'),
+('conversion'),
+('contact_agent'),
+('service_info');
+
+
+
+INSERT INTO chatbot.operation_phrase (id_operation, id_intent, phrase) VALUES
+(1, 9, 'je veux suivre mon colis'),
+(1, 9, 'ou est mon colis'),
+(1, 9, 'je veux localiser mon colis'),
+(1, 9, 'suivi de colis'),
+(1, 9, 'voir statut de mon colis');
+
+-------------------
+INSERT INTO chatbot.operation_phrase (id_operation, id_intent, phrase) VALUES
+(2, 12, 'je veux convertir de l argent'),
+(2, 12, 'convertir devise'),
+(2, 12, 'faire une conversion de monnaie'),
+(2, 12, 'je veux connaitre le taux de change'),
+(2, 12, 'convertir montant en devise');
+
+------------------
+INSERT INTO chatbot.operation_phrase (id_operation, id_intent, phrase) VALUES
+(3, 10, 'je veux parler a un agent'),
+(3, 10, 'je veux contacter le support'),
+(3, 10, 'je veux parler a quelqu un'),
+(3, 10, 'je veux assistance humaine'),
+(3, 10, 'contacter un conseiller');
+
+----------------
+INSERT INTO chatbot.operation_phrase (id_operation, id_intent, phrase) VALUES
+(4, 11, 'je veux voir vos services'),
+(4, 11, 'quels sont vos services'),
+(4, 11, 'liste de vos services'),
+(4, 11, 'montre moi vos services'),
+(4, 11, 'je veux connaitre vos offres');
 
 
 
 
 
-
-
-
-
-
+TRUNCATE TABLE chatbot.operation_phrase RESTART IDENTITY;
 
 
 
@@ -208,27 +183,31 @@ CREATE TABLE chatbot.operation_pattern (
 CREATE TABLE chatbot.conversations(
     id_conv SERIAL PRIMARY KEY,
     id_user INTEGER NOT NULL REFERENCES auth.users(id_user) ON DELETE CASCADE,
+    id_intent INTEGER NOT NULL REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
     message_user TEXT NOT NULL,
     reponse_bot TEXT,
-    intention VARCHAR(255),
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+SELECT * FROM chatbot.conversations;
 
 DROP TABLE chatbot.conversations CASCADE;
 
-TRUNCATE TABLE chatbot.conversations RESTART IDENTITY CASCADE;
+-- version numero 2:
 
+CREATE TABLE chatbot.conversations (
+    id_conv SERIAL PRIMARY KEY,
+    id_user INTEGER NOT NULL REFERENCES auth.users(id_user) ON DELETE CASCADE,
 
+    message_user TEXT NOT NULL,
+    reponse_bot TEXT,
 
+    id_intent INT REFERENCES chatbot.intention(id_intent),
+    id_operation INT REFERENCES chatbot.operation(id_operation),
 
---Table sessions
-CREATE TABLE chatbot.sessions(
-    id_sess SERIAL PRIMARY KEY,
-    id_user INTEGER REFERENCES auth.users(id_user) ON DELETE CASCADE,
-    heure_debut TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    heure_fin TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    statut VARCHAR(50) NOT NULL
+    confidence FLOAT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -243,21 +222,6 @@ CREATE TABLE chatbot.intention(
     descriptions TEXT,
     dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-DROP TABLE chatbot.intention CASCADE;
-
-
-
-
-SELECT * FROM chatbot.intention;
-
-
-
-SELECT * FROM chatbot.intention;
-
--- Table reponse_intention
-
-
 
 
 
@@ -413,20 +377,6 @@ INSERT INTO core.service (nom_service, descriptions, menu, icone) VALUES
     'ctexi_academie.png'
 );
 
-SELECT * FROM core.service;
-
-TRUNCATE TABLE core.service RESTART IDENTITY CASCADE;
-
-
---Table formations
-CREATE TABLE core.formation(
-    id_formation SERIAL PRIMARY KEY,
-    titre VARCHAR(150) NOT NULL,
-    descriptions TEXT,
-    date_debut DATE,
-    date_fin DATE
-);
-
 
 
 --table colis
@@ -450,41 +400,9 @@ INSERT INTO core.colis (code_colis, id_user, statut, type_colis, modes) VALUES
 ('CTX10005', 9, 'Livré', 'Chaussures', 'Maritime');
 
 
-SELECT * FROM core.colis;
 
---Table taux_change
-CREATE TABLE core.taux_change(
-    id_taux SERIAL PRIMARY KEY,
-    taux NUMERIC(10, 2) NOT NULL,
-    dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -------------------------------------SCHEMA SYSTEMS--------------------------------------------------------------
-
-
---Table logs 
-CREATE TABLE systems.log(
-    id_log SERIAL PRIMARY KEY,
-    id_sess INTEGER REFERENCES chatbot.sessions(id_sess) ON DELETE SET NULL,
-    actions VARCHAR(100),
-    levels VARCHAR(20),
-    dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-
-
---table notification
-
-CREATE TABLE systems.notification(
-    id_notif SERIAL PRIMARY KEY,
-    id_user INTEGER REFERENCES auth.users(id_user) ON DELETE CASCADE,
-    contenu TEXT NOT NULL,
-    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-----------------------------------------------Suppression et mise a jour-------------------------------------------
 
 
 -- Pour chatbot.faq
@@ -495,19 +413,6 @@ UPDATE chatbot.intention SET embedding = NULL;
 
 
 
-DROP TABLE chatbot.faq CASCADE;
-DROP TABLE chatbot.intention CASCADE;
-
-
--- Supprime toutes les lignes de la table FAQ
-DELETE FROM chatbot.faq;
-
--- Supprime toutes les lignes de la table intention
-DELETE FROM chatbot.intention;
-
-
-SELECT * FROM chatbot.conversations;
-
 SET search_path TO chatbot, public;
 
 
@@ -517,40 +422,18 @@ SELECT extname FROM pg_extension;
 SELECT * FROM auth.agents;
 
 
-
 --Ajout d'embeding dans intention
 SET search_path TO chatbot, public;
 
-SELECT * FROM chatbot.intention;
-
--- Supprime toutes les lignes et réinitialise les séquences
-TRUNCATE TABLE chatbot.faq RESTART IDENTITY CASCADE;
-TRUNCATE TABLE chatbot.intention RESTART IDENTITY CASCADE;
-
-
--- Supprimer la colonne embedding
-ALTER TABLE chatbot.faq DROP COLUMN embedding;
-ALTER TABLE chatbot.intention DROP COLUMN embedding;
 
 ALTER TABLE chatbot.intention 
 ADD COLUMN embedding vector(384);
-
-
-SELECT * FROM chatbot.intention;
-
-SELECT * FROM chatbot.faq;
-
--------------------------------Insertion des donnees dans les tables faq et intention----------------------------------
-
-
 
 
 
 ------------------------------------------Table Intention---------------------------------------------------------------
 
 
-
----------------------------------------------salutation ==> 1
 INSERT INTO chatbot.intention(nom, type_intent, descriptions)
 VALUES
 (
@@ -593,8 +476,6 @@ VALUES
 );
 
 
-
-
 ----------------------------------------------buy(achat) ==>5
 
 INSERT INTO chatbot.intention (nom, type_intent, descriptions)
@@ -607,7 +488,7 @@ VALUES
 );
 
 
--------------------------------------------travel  ==>6
+--------------------------------------------travel  ==> 6
 
 INSERT INTO chatbot.intention (nom, type_intent, descriptions)
 VALUES
@@ -619,7 +500,7 @@ VALUES
 
 
 
------------------------------------------academie ==>7
+-----------------------------------------academie  ==> 7
 
 INSERT INTO chatbot.intention (nom, type_intent, descriptions)
 VALUES
@@ -630,7 +511,8 @@ VALUES
 );
 
 
---------------------------------------cargo  ==>8
+
+--------------------------------------    cargo==> 8
 
 INSERT INTO chatbot.intention (nom, type_intent, descriptions)
 VALUES
@@ -640,7 +522,8 @@ VALUES
 'Questions sur le transport de colis Chine–Burkina (délais, coûts, douane, suivi).'
 );
 
------------------------------------suivi_colis ==>9
+
+-----------------------------------suivi_colis ==> 9
 
 INSERT INTO chatbot.intention (nom, type_intent, descriptions)
 VALUES
@@ -650,8 +533,6 @@ VALUES
 'Suivi et vérification du statut d’un colis ou d’une commande.'
 
 );
-
-
 
 
 ----------------------------------contact_agent ==> 10
@@ -688,63 +569,9 @@ VALUES
 
 
 
-
 SELECT * FROM chatbot.intention;
+
 ------------------------------------------------Table Faq--------------------------------------------------------------
-
-
--- =======================
--- salutation (id_intent = 1)
--- =======================
-
-INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
-(1, 'salut', 'Salut 👋 Comment puis-je vous aider ?'),
-(1, 'bonjour', 'Bonjour 👋 Comment puis-je vous aider ?'),
-(1, 'ca va', 'Je vais bien merci 😊  Comment puis-je vous aider ?'),
-(1, 'bonsoir', 'Bonsoir 👋 Comment puis-je vous aider ?');
-
-
-
--- =======================
--- aurevoir (id_intent = 2)
--- =======================
-
-INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
-
-(2, 'au revoir', 'Au revoir 👋 À bientôt !'),
-(2, 'bye', 'Bye 👋 Passez une excellente journée !'),
-(2, 'a plus', 'À la prochaine 👋'),
-(2, 'je pars', 'D’accord 😊 À bientôt !'),
-(2, 'bonne journee', 'Merci 😊 Bonne journée à vous aussi !');
-
-
-
--- =======================
--- remerciement (id_intent = 3)
--- =======================
-
-
-INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
-
-(3, 'merci', 'Je vous en prie 😊 N’hésitez pas si vous avez d’autres questions.'),
-(3, 'merci beaucoup', 'Je vous en prie 😊'),
-(3, 'thanks', 'You are welcome 😊'),
-(3, 'grand merci', 'Avec plaisir 😊'),
-(3, 'c’est gentil', 'Merci à vous 😊 Si vous avez d’autres questions n’hesitez pas.');
-
-
-
--- =======================
--- validation (id_intent = 4)
--- =======================
-
-INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
-
-(4, 'ok', 'Parfait 👍 Avez-vous d’autres questions ?'),
-(4, 'd’accord', 'Très bien 👍 N’hésitez pas si besoin !'),
-(4, 'cool', 'Super 😄 Autres choses a me demander ?'),
-(4, 'ca marche', 'Parfait 👍Si vous avez d’autres questions n’hesitez pas.'),
-(4, 'c’est bon', 'Très bien 👍Si vous avez d’autres questions n’hesitez pas.');
 
 
 
@@ -801,13 +628,6 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 (5, 'vous faites une verification des produits', 'Oui, nous faisons un contrôle qualité avant l’expédition pour vérifier la conformité.'),
 
 
-(5, 'on fait comment si le produit est defectueux', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
-(5, 'que faire si le produit n’est pas conforme', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
-(5, 'que faire si le produit a un probleme', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
-(5, 'si le produit a un probleme', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
-(5, 'je fais comment si le produit n’est pas identique', 'Contactez notre service client avec photos, nous analyserons le problème avec le fournisseur.'),
-(5, 'comment on va faire si le produit n’est pas conforme', 'Contactez-nous immédiatement avec des preuves, nous traitons le problème avec le fournisseur.'),
-
 
 (5, 'proposez vous une assurance', 'Oui, une assurance transport peut être ajoutée pour couvrir pertes ou dommages.'),
 (5, 'est ce que vous proposez une assurance', 'Oui, une assurance transport peut être ajoutée pour couvrir pertes ou dommages.'),
@@ -827,7 +647,7 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 (5, 'puis je annuler ma commande', 'Oui, uniquement si la commande n’a pas encore été payée au fournisseur.'),
 (5, 'on peut annuler une commande', 'Oui, uniquement si la commande n’a pas encore été payée au fournisseur.'),
 (5, 'est ce que c’est possible d’annuler ma commande', 'Oui, uniquement si la commande n’a pas encore été payée au fournisseur.'),
-(5, 'puis je annuler ma commande', 'Oui, uniquement si la commande n’a pas encore été payée au fournisseur.'),
+(5, 'puis je annuler ma commande', 'Oui, uniquement 'si la commande n’a pas encore été payée au fournisseur.'),
 (5, 'c’est possible d’annuler ma commande', 'Oui, uniquement si la commande n’a pas encore été payée au fournisseur.'),
 
 (5, 'quels produits pouvez vous acheter', 'Nous pouvons acheter presque tous les produits disponibles en Chine selon la légalité.'),
@@ -936,12 +756,13 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 -- =======================
 
 INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
-
+(8, 'est ce que vous pouvez expedier mes colis de chine au burkina', 'Nous assurons l’expédition de vos marchandises de la Chine vers le Burkina Faso.'),
 (8, 'est ce que vous pouvez envoyer mes colis de chine au burkina', 'Nous assurons l’expédition de vos marchandises de la Chine vers le Burkina Faso.'),
 (8, 'comment envoyer de la marchandise de la chine vers le burkina', 'Nous assurons l’expédition de vos marchandises de la Chine vers le Burkina Faso.'),
 (8, 'vous faites transport de la chine vers le burkina', 'Nous assurons l’expédition de vos marchandises de la Chine vers le Burkina Faso.'),
 (8, 'je veux faire venir des produits de chine', 'Nous assurons l’expédition de vos marchandises de la Chine vers le Burkina Faso.'),
 (8, 'vous pouvez livrer mes colis depuis la chine', 'Nous assurons l’expédition de vos marchandises de la Chine vers le Burkina Faso.'),
+(8, 'je veux faire une expedition', 'Nous assurons l’expédition de vos marchandises de la Chine vers le Burkina Faso.'),
 
 (8, 'combien de temps prend le transport', 'Le délai dépend du mode : environ 7 à 15 jours par avion et 30 à 45 jours par bateau.'),
 (8, 'le colis va arriver en combien de jours', 'Le délai dépend du mode : environ 7 à 15 jours par avion et 30 à 45 jours par bateau.'),
@@ -987,33 +808,6 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 
 
 -- =======================
--- suivi_colis (id_intent = 9)
--- =======================
-
-INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot)
-VALUES
-(9, 'suivre colis', 'Veuillez entrer votre code colis pour consulter son statut.');
-
-
--- =======================
--- contact_agent (id_intent = 10)
--- =======================
-INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot)
-VALUES
-(10, 'contact agent', 'Je peux vous mettre en relation avec un agent. Veuillez choisir : WhatsApp, appel ou email.');
-
-
-
--- =======================
--- service_info (id_intent = 11)
--- =======================
-
-INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
-
-(11, 'service', 'Nous proposons plusieurs services : achat en Chine (Buy), transport de colis (Cargo), paiement international (Pay), voyages (Travel) et formations (Académie).');
-
-
--- =======================
 -- taux_change (id_intent = 12)
 -- =======================
 
@@ -1044,9 +838,7 @@ INSERT INTO chatbot.faq (id_intent, message_user, reponse_bot) VALUES
 
 
 SELECT * FROM chatbot.faq;
-SELECT * FROM chatbot.intention;
 
 
 
 
-TRUNCATE TABLE chatbot.faq RESTART IDENTITY;
