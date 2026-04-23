@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Conversations | Ctexi-Bot</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+
+    <div class="logo">
+      <img src="{{ url_for('static', filename='logo.png') }}" class="logo-img">
+      <div>
+        <h2>Ctexi-Bot</h2>
+        <p>Admin Panel</p>
+      </div>
+    </div>
+
+    <nav class="menu">
+      <a href="/api/auth/dashboard">📊 Dashboard</a>
+      <a class="active" href="/api/auth/conversations">💬 Conversations</a>
+      <a href="#">📚 FAQ</a>
+      <a href="#">⚙️ Opérations</a>
+      <a href="#">👤 Users</a>
+    </nav>
+
+    <form method="POST" action="/api/auth/logout">
+      <button class="logout">Déconnexion</button>
+    </form>
+
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+
+    <header class="topbar">
+      <h1>💬 Conversations</h1>
+    </header>
+
+    <!-- FILTRES (optionnel mais pro) -->
+    <div class="filters">
+      <input type="text" id="searchInput" placeholder="Rechercher message...">
+    </div>
+
+    <!-- LISTE CONVERSATIONS -->
+    <div id="conversationList" class="conversation-list">
+
+      <!-- JS injectera les conversations ici -->
+
+    </div>
+
+  </main>
+
+</div>
+
+<script src="{{ url_for('static', filename='conversation.js') }}"></script>
+
+</body>
+</html>

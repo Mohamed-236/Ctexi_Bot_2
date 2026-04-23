@@ -54,7 +54,8 @@ def chatbot_response():
             reponse_bot=result.get("reponse", ""),
 
             id_intent=result.get("id_intent"),
-            id_operation=result.get("id_operation")
+            id_operation=result.get("id_operation"),
+            confidence=float(result.get("confidence", 0))
 
         )
     except Exception as e:

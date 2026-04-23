@@ -1,7 +1,7 @@
 from rapidfuzz import fuzz
 import random
 
-SEUIL = 80  # tolérance fautes
+SEUIL = 90  # tolérance fautes
 
 INTENTS_LIGHT = {
     "salutation": {

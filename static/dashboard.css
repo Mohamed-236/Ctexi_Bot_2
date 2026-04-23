@@ -1,0 +1,287 @@
+/* ================= GLOBAL ================= */
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #f4f6f9;
+}
+
+/* ================= LAYOUT ================= */
+.dashboard {
+  display: flex;
+  height: 100vh;
+}
+
+/* ================= SIDEBAR ================= */
+.sidebar {
+  width: 240px;
+  background: #1d4ed8;
+  color: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo h2 {
+  margin: 0;
+}
+
+.logo p {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.menu {
+  margin-top: 30px;
+  flex: 1;
+}
+
+.menu a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.menu a:hover,
+.menu a.active {
+  background: rgba(255,255,255,0.2);
+}
+
+.logout {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background: white;
+  color: #1d4ed8;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ================= MAIN ================= */
+.main {
+  flex: 1;
+  padding: 20px;
+}
+
+/* TOPBAR */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+/* ================= CARDS ================= */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.card h3 {
+  font-size: 13px;
+  color: #666;
+}
+
+.card p {
+  font-size: 22px;
+  color: #1d4ed8;
+  font-weight: bold;
+}
+
+/* ================= CHARTS ================= */
+.charts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.chart-box {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.chart-box h3 {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;   /*  rend le logo rond */
+  object-fit: cover;    /* évite déformation */
+  border: 2px solid white; /* optionnel (style clean) */
+}
+
+.logo h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.logo p {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+
+
+/* ================= LAYOUT ================= */
+.dashboard {
+  display: flex;
+  height: 100vh;
+  overflow: hidden; /* pas de scroll global */
+}
+
+/* ================= SIDEBAR ================= */
+.sidebar {
+  width: 190px;
+  background: #1d4ed8;
+  color: white;
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* prend toute la hauteur */
+}
+
+/* zone menu scrollable */
+.menu {
+  margin-top: 30px;
+  flex: 1;
+  overflow-y: auto; /* scroll si besoin */
+  padding-right: 5px;
+}
+
+/* logout toujours visible en bas */
+.logout {
+  margin-top: auto;
+  margin-bottom: 35px; /* 👈 plus haut qu’avant */
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background: white;
+  color: #1d4ed8;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ================= MAIN ================= */
+.main {
+  flex: 1;
+  padding: 20px;
+  height: 100vh;
+  overflow-y: auto; /* scroll uniquement ici */
+}
+
+
+/* ================= MAIN ================= */
+
+
+#app {
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border-left: 4px solid #1d4ed8;
+}
+
+
+
+
+/* ================= CONVERSATION PAGE ================= */
+
+.filters {
+  margin-bottom: 15px;
+}
+
+.filters input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+/* LISTE */
+.conversation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* CARD */
+.conv-card {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  border-left: 4px solid #1d4ed8;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: 0.2s;
+}
+
+.conv-card:hover {
+  transform: scale(1.01);
+}
+
+/* HEADER MESSAGE */
+.conv-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+/* MESSAGE USER */
+.user-msg {
+  font-weight: bold;
+  color: #111;
+}
+
+/* RESPONSE BOT */
+.bot-msg {
+  margin-top: 5px;
+  color: #444;
+}
+
+/* BADGES */
+.badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: white;
+}
+
+.badge.ok { background: #16a34a; }
+.badge.low { background: #f59e0b; }
+.badge.bad { background: #ef4444; }

@@ -16,31 +16,25 @@ from models.suivi_colis import recuperer_colis
 from nlp.preprocess_colis import est_code_colis
 from nlp.netoyage import nettoyer_message
 
-
 from services.conversion_service import convertir_devise
 from nlp.extraction_devise import extraire_donnees_conversion
 
-
-
-
-#===============================================================
-# Les operations
+# ==========================================================
+# OPERATIONS
+# ==========================================================
 
 from router.operation_router import detecter_operation
 from services.tracking_service import get_colis_info
 from services.controler.conversion_controler import convertir_operation
 from services.agent_service import get_agent
 from services.service_info import get_services
-#===============================================================
+
 from nlp.simple_intent import detecter_intent_light, repondre_intent_light
-
-
 
 # ==========================================================
 # LOGGING
 # ==========================================================
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 # ==========================================================
 # MODELE
@@ -52,12 +46,10 @@ modele_embedding = SentenceTransformer(
 SEUIL_FAQ = 0.55
 MARGE = 0.1
 
-
 # ==========================================================
 # CACHE
 # ==========================================================
 CACHE_FAQ = []
-
 
 # ==========================================================
 # CHARGEMENT FAQ
@@ -81,7 +73,6 @@ def charger_faq():
 
     logging.info(f"{len(CACHE_FAQ)} FAQ chargées")
 
-
 # ==========================================================
 # TOP-K FAQ
 # ==========================================================
@@ -99,7 +90,6 @@ def rechercher_faq_top_k(embedding_message, top_k=5):
     scores = cosine_similarity(embedding_message, embeddings)[0]
 
     top_indices = np.argsort(scores)[-top_k:][::-1]
-
     top_faqs = [(CACHE_FAQ[i], scores[i]) for i in top_indices]
 
     best_faq, best_score = top_faqs[0]
@@ -107,38 +97,21 @@ def rechercher_faq_top_k(embedding_message, top_k=5):
 
     logging.info(f"BEST FAQ: {best_faq['message_user']} => {best_score:.4f}")
 
-    # ==========================
-    # 🔥 FIX IMPORTANT 1 : SCORE MIN
-    # ==========================
     if best_score < SEUIL_FAQ:
         return None, best_score
 
-    # ==========================
-    # 🔥 FIX IMPORTANT 2 : ANTI-CONFUSION (TRÈS IMPORTANT)
-    # ==========================
-
     gap = best_score - second_score
 
-    # 🔥 CAS 1 : score très élevé → on accepte toujours
-    if best_score >= 0.75:
-        return {
-            "type": "ok",
-            "faq": best_faq
-        }, best_score
+    if best_score >= 0.85:
+        return {"type": "ok", "faq": best_faq}, best_score
 
-    # 🔥 CAS 2 : score moyen → vérifier gap
     if gap < 0.03:
-        logging.info("FAQ ambiguë détectée (score proche)")
-
         return {
             "type": "incertain",
             "faq": best_faq,
             "suggestions": [f[0]["message_user"] for f in top_faqs[1:3]]
         }, best_score
 
-    # ==========================
-    # ⚠️ CAS INCERTAIN
-    # ==========================
     if SEUIL_FAQ <= best_score < (SEUIL_FAQ + MARGE):
         return {
             "type": "incertain",
@@ -146,45 +119,43 @@ def rechercher_faq_top_k(embedding_message, top_k=5):
             "suggestions": [f[0]["message_user"] for f in top_faqs[1:3]]
         }, best_score
 
-    # ==========================
-    # ✅ CAS OK
-    # ==========================
-    return {
-        "type": "ok",
-        "faq": best_faq
-    }, best_score
+    return {"type": "ok", "faq": best_faq}, best_score
+
+# ==========================================================
+# HELPER CONFIDENCE
+# ==========================================================
+def safe_float(value, default=0.0):
+    try:
+        if isinstance(value, (list, tuple, np.ndarray)):
+            value = value[0]
+        return float(value)
+    except:
+        return default
+
+def build_response(base: dict, confidence: float):
+    base["confidence"] = safe_float(confidence)
+    return base
 
 # ==========================================================
 # MOTEUR PRINCIPAL
 # ==========================================================
-
 def trouver_meilleure_correspondance(message_utilisateur, id_user):
 
     logging.info(f"Message: {message_utilisateur}")
 
     # ==========================
-    # ROUTER CENTRAL
-    # ==========================
-    # message_clean = nettoyer_message(message_utilisateur)
-
-
-    # ==========================
-    # INTENTS SIMPLES (PRIORITÉ MAX)
+    # INTENT SIMPLE
     # ==========================
     intent_light = detecter_intent_light(message_utilisateur)
 
     if intent_light:
-        return {
+        return build_response({
             "type": intent_light,
             "reponse": repondre_intent_light(intent_light),
             "id_intent": None,
             "id_operation": None,
-            "confidence": 0.95,
             "trouve": True
-        }
-        
-
-
+        }, 0.95)
 
     operation = detecter_operation(message_utilisateur)
 
@@ -196,28 +167,28 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
         info = get_colis_info(message_utilisateur, id_user)
 
         if info:
-            return {
+            return build_response({
                 "type": "tracking",
                 "reponse": "Voici les informations de votre colis",
                 "data": info,
+                "id_operation": "suivi_colis",
                 "trouve": True
-            }
+            }, 1.0)
 
         code = est_code_colis(message_utilisateur)
 
         if code:
-            return {
+            return build_response({
                 "type": "tracking_not_found",
                 "reponse": "Aucun colis trouvé ou code non attribué a l'utilisateur connecté.",
                 "trouve": False
-            }
+            }, 0.9)
 
-        return {
+        return build_response({
             "type": "tracking_request",
             "reponse": "Veuillez entrer votre code colis CTExI pour voir les informations:",
             "trouve": True
-        }
-    
+        }, 0.8)
 
     # ==========================
     # CONVERSION
@@ -225,20 +196,19 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
     if operation == "conversion":
         result = convertir_operation(message_utilisateur)
 
-        # ✅ CAS 1 : conversion complète
         if result:
-            return {
+            return build_response({
                 "type": "conversion",
                 "reponse": f"{result['montant']} {result['source']} ≈ {result['resultat']} {result['cible']}",
                 "trouve": True
-            }
+            }, 1.0)
 
-        # ✅ CAS 2 : intention détectée MAIS données manquantes
-        return {
+        return build_response({
             "type": "conversion_help",
             "reponse": "Veuillez préciser le montant et les devises.\nExemple : 5000 FCFA en EUR",
             "trouve": True
-        }
+        }, 0.7)
+
     # ==========================
     # AGENT
     # ==========================
@@ -247,18 +217,18 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
         agent = get_agent()
 
         if agent:
-            return {
+            return build_response({
                 "type": "agent",
                 "reponse": "Je vous mets en relation avec un agent",
                 "agent": agent,
                 "trouve": True
-            }
+            }, 1.0)
 
-        return {
+        return build_response({
             "type": "fallback",
             "reponse": "Aucun agent disponible.",
             "trouve": False
-        }
+        }, 0.6)
 
     # ==========================
     # SERVICES
@@ -267,15 +237,15 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
 
         services = get_services()
 
-        return {
+        return build_response({
             "type": "service",
             "reponse": "Voici nos services disponibles",
             "services": services,
             "trouve": True
-        }
+        }, 1.0)
 
     # ==========================
-    # FAQ (IA)
+    # FAQ
     # ==========================
     embedding_message = modele_embedding.encode(
         [message_utilisateur],
@@ -285,41 +255,40 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
     faq, score = rechercher_faq_top_k(embedding_message)
 
     if faq:
+
         if faq["type"] == "incertain":
-            return {
+            return build_response({
                 "type": "faq_incertain",
                 "reponse": faq["faq"]["reponse_bot"],
                 "suggestions": faq["suggestions"],
                 "id_intent": faq["faq"]["id_intent"],
                 "id_operation": None,
-                "confidence": score,
                 "trouve": True
-            }
+            }, score)
 
-        return {
+        return build_response({
             "type": "faq",
             "reponse": faq["faq"]["reponse_bot"],
             "id_intent": faq["faq"]["id_intent"],
             "id_operation": None,
-            "confidence": score,
             "trouve": True
-        }
+        }, score)
 
     # ==========================
-    # FALLBACK FINAL
+    # FALLBACK
     # ==========================
     agent = get_agent()
 
     if agent:
-        return {
+        return build_response({
             "type": "agent",
-            "reponse": "Je ne suis pas sûr de comprendre.Merci de contacter un agent pour plus d'eclaircissement.",
+            "reponse": "Je ne suis pas sûr de comprendre. Contactez un agent.",
             "agent": agent,
             "trouve": False
-        }
+        }, 0.5)
 
-    return {
+    return build_response({
         "type": "fallback",
         "reponse": "Je ne comprends pas votre demande.",
         "trouve": False
-    }
+    }, 0.3)

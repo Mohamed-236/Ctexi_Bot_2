@@ -48,6 +48,11 @@ CREATE TABLE auth.users(
     
 ); 
 
+UPDATE auth.users SET est_admin = TRUE
+WHERE email = 'momo@gmail.com';
+
+SELECT id_user, email, est_admin FROM auth.users;
+
 
 --Table agents
 CREATE TABLE auth.agents(

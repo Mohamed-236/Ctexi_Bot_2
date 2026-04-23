@@ -20,22 +20,44 @@ const initialInputHeight = messageInput.scrollHeight;
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+
     const email = loginEmail.value.trim();
     const mdp = loginPassword.value.trim();
+
     if (!email || !mdp) return alert("Veuillez remplir tous les champs.");
+
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, mdp })
       });
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Erreur lors de la connexion");
+
+      if (!response.ok) {
+        throw new Error(data.message || "Erreur lors de la connexion");
+      }
+
       console.log("Login data:", data);
-      localStorage.setItem("token", data.token);
+
+      // 🔥 STOCKAGE
+      localStorage.setItem("token", data.token || "");
       localStorage.setItem("user_name", data.user?.nom || "");
-      window.location.href = "/";
-    } catch (err) { console.error(err); alert(err.message); }
+
+
+      if (data.redirect) {
+          console.log("REDIRECT =>", data.redirect);
+          window.location.href = data.redirect;
+      } else {
+          window.location.href = "/api/auth/chatbot";
+      }
+
+
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
   });
 }
 

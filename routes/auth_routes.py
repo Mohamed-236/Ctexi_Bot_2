@@ -96,7 +96,7 @@ def token_required(f):
 # ROUTE REGISTER : Api : http://localhost:5000/api/auth/
 # ========================================================
 @auth_bp.route("/", methods=["GET"])
-def accueil():
+def index():
     return render_template("index.html")
 
 
@@ -110,7 +110,43 @@ def dashboard():
     return render_template("dashboard.html")
 
 
+@auth_bp.route("/conversations", methods=["GET"])
+def conversations_page():
+    return render_template("conversation.html")
 
+
+@auth_bp.route("/discussion", methods=["GET"])
+def get_conversations():
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id_conv, id_user, message_user, reponse_bot,
+               id_operation, confidence, created_at
+        FROM chatbot.conversations
+        ORDER BY created_at DESC
+        LIMIT 100
+    """)
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    data = []
+
+    for r in rows:
+        data.append({
+            "id": r[0],
+            "user_id": r[1],
+            "message": r[2],
+            "response": r[3],
+            "operation": r[4],
+            "confidence": float(r[5]) if r[5] else 0,
+            "date": r[6].strftime("%Y-%m-%d %H:%M")
+        })
+
+    return jsonify(data)
 
 # ===============================================================
 # ROUTE REGISTER  : Api : http://localhost:5000/api/auth/register
@@ -173,6 +209,7 @@ def register():
 # ==========================================================
 # ROUTE LOGIN : Api: http://localhost:5000/api/auth/login
 # ==========================================================
+
 @auth_bp.route('/login', methods=["GET", "POST"])
 def login():
     if request.method == "GET":
@@ -191,56 +228,50 @@ def login():
     cur.execute("SELECT * FROM auth.users WHERE email=%s", (email,))
     user = cur.fetchone()
     conn.close()
+    
+
 
     if user and mdp and check_password_hash(user['mdp_hash'], mdp):
-        # Création JWT pour app mobile
-        token = jwt.encode({
-            "id": user["id_user"],
-            "nom": user["nom"],
-            "exp": datetime.utcnow() + timedelta(hours=12)  # token valide 12h
-        }, SECRET_KEY, algorithm="HS256")
+        
+        print("EMAIL:", user["email"])
+        print("IS_ADMIN:", user["est_admin"])
 
-            #  AJOUT IMPORTANT
         session['user_id'] = user['id_user']
         session['user_name'] = user['nom']
+        session['is_admin'] = user['est_admin']
 
+        # 🔥 CAS API
         if request.is_json:
             return jsonify({
                 "status": "success",
-                "message": "Connexion réussie",
-                "token": token,
+                "is_admin": user["est_admin"],
+                "redirect": "/api/auth/dashboard" if user["est_admin"] else "/api/auth/chatbot",
                 "user": {
                     "id": user["id_user"],
                     "nom": user["nom"]
                 }
-            }), 200
+            })
 
-        # HTML → session + redirection
-        session['user_id'] = user['id_user']
-        session['user_name'] = user['nom']
-        flash("Connexion réussie !!", "success")
-        return redirect(url_for('auth.chatbot'))
-
-    if request.is_json:
-        return jsonify({"status": "error", "message": "Email ou mot de passe incorrect"}), 401
-
-    flash("Email ou mot de passe incorrect", "danger")
-    return redirect(url_for('auth.chatbot'))
+        # 🔥 CAS HTML
+        if user["est_admin"]:
+            return redirect(url_for('auth.dashboard'))
+        else:
+            return redirect(url_for('auth.chatbot'))
 
 
-# =============================================================
-# ROUTE LOGOUT : Api : http://localhost:5000/api/auth/logout
-# =============================================================
+    # =============================================================
+    # ROUTE LOGOUT : Api : http://localhost:5000/api/auth/logout
+    # =============================================================
 @auth_bp.route('/logout', methods=["POST"])
 def logout():
-    if 'user_id' in session:
-        session.clear()
+        if 'user_id' in session:
+            session.clear()
 
-    if request.is_json:
-        return jsonify({"status": "success", "message": "Déconnexion réussie"}), 200
+        if request.is_json:
+            return jsonify({"status": "success", "message": "Déconnexion réussie"}), 200
 
-    flash("Vous êtes déconnecté avec succès", "success")
-    return redirect(url_for("auth.accueil"))
+        flash("Vous êtes déconnecté avec succès", "success")
+        return redirect(url_for("auth.index"))
 
 
 
@@ -250,7 +281,7 @@ def logout():
 # =============================================================
 
 @auth_bp.route("/chatbot", methods=["GET"]) 
-def index():
+def chatbot():
     user_name = session.get('user_name', 'Utilisateur')
     return render_template('chatbot.html', user_name=user_name)
 

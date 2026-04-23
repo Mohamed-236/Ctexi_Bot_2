@@ -24,16 +24,30 @@
 
     <button type="submit">Se connecter</button>
 </form>
-
+<div id="toast" class="toast"></div>
 <script>
 const loginForm = document.getElementById("login-form");
+const toast = document.getElementById("toast");
+
+// fonction toast moderne
+function showToast(message, type="success") {
+    toast.textContent = message;
+    toast.className = "toast show " + type;
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000);
+}
 
 loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const email = document.getElementById("email").value.trim();
     const mdp = document.getElementById("mdp").value.trim();
-    if (!email || !mdp) return alert("Veuillez remplir tous les champs");
+
+    if (!email || !mdp) {
+        return showToast("Veuillez remplir tous les champs", "error");
+    }
 
     try {
         const response = await fetch("/api/auth/login", {
@@ -45,16 +59,21 @@ loginForm.addEventListener("submit", async (e) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || "Erreur connexion");
 
-        // Stockage automatique pour le bot
+        // stockage
         localStorage.setItem("token", data.token);
         localStorage.setItem("user_name", data.user.nom);
 
-        alert("Connexion réussie !");
-        window.location.href = "/api/auth/chatbot"; // Redirection vers la page principale
+        // ✅ toast au lieu de alert
+        showToast("Connexion réussie 🎉", "success");
+
+        // redirection douce après 1.5s
+        setTimeout(() => {
+            window.location.href = data.redirect;
+        }, 1500);
 
     } catch (err) {
         console.error(err);
-        alert(err.message);
+        showToast(err.message, "error");
     }
 });
 </script>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Admin | Ctexi-Bot</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+
+   <div class="logo">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo-img">
+    <div>
+        <h2>Ctexi-Bot</h2>
+        <p>Admin Panel</p>
+    </div>
+   </div>
+
+    <nav class="menu">
+      <a class="active" href="/api/auth/dashboard">📊 Dashboard</a>
+      <a href="/api/auth/conversations">💬 Conversations</a>
+      <a href="#">📚 FAQ</a>
+      <a href="#">⚙️ Opérations</a>
+      <a href="#">👤 Users</a>
+      <a href="#">⬇️ Export CSV</a>
+    </nav>
+
+    <form method="POST" action="/api/auth/logout">
+      <button class="logout">Déconnexion</button>
+    </form>
+
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+
+    <header class="topbar">
+      <h1>Dashboard Analytics</h1>
+      <div class="user">👋 {{ user_name }}</div>
+    </header>
+
+    <!-- ================= KPI ================= -->
+    <section class="cards">
+
+      <div class="card">
+        <h3>Utilisateurs</h3>
+        <p id="usersCount">120</p>
+      </div>
+
+      <div class="card">
+        <h3>Conversations</h3>
+        <p id="convCount">450</p>
+      </div>
+
+      <div class="card">
+        <h3>FAQ Match</h3>
+        <p id="faqCount">78%</p>
+      </div>
+
+      <div class="card">
+        <h3>Fallback</h3>
+        <p id="fallbackCount">22%</p>
+      </div>
+
+    </section>
+
+    <!-- ================= GRAPHS ================= -->
+    <section class="charts">
+
+      <div class="chart-box">
+        <h3>Utilisateurs (7 jours)</h3>
+        <canvas id="usersChart"></canvas>
+      </div>
+
+      <div class="chart-box">
+        <h3>Conversations</h3>
+        <canvas id="convChart"></canvas>
+      </div>
+
+      <div class="chart-box">
+        <h3>Répartition intents</h3>
+        <canvas id="intentChart"></canvas>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+
+</body>
+</html>

@@ -4,7 +4,7 @@ from models.db_connect import get_db_connection
 from nlp.preprocess_colis import est_code_colis
 from nlp.extraction_devise import extraire_donnees_conversion
 
-SEUIL = 70
+SEUIL = 90
 
 
 def detecter_operation(message: str):
