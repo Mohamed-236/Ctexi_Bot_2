@@ -1,5 +1,5 @@
 async function loadConversations() {
-  const res = await fetch("/api/auth/discussion");
+  const res = await fetch("/api/dashboard/discussion");
   return await res.json();
 }
 

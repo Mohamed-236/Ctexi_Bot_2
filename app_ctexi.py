@@ -4,6 +4,8 @@ from routes.auth_routes import auth_bp
 from routes.faq_route import faq_bp
 from routes.contact_agent_route import contact_bp
 from routes.service_route import service_bp
+from routes.dashbord_routes import dashboard_bp
+
 
 # Creation de l'app
 app = Flask(__name__)
@@ -12,6 +14,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(faq_bp)
 app.register_blueprint(contact_bp)
 app.register_blueprint(service_bp)
+app.register_blueprint(dashboard_bp)
 
 
 if __name__ == "__main__":  

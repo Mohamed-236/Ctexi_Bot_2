@@ -113,10 +113,6 @@ CREATE TABLE chatbot.operation (
 );
 
 
-SELECT * FROM chatbot.operation;
-
-SELECT * FROM chatbot.operation_phrase;
-
 
 -- Table des phrases utilisateur (patterns)
 CREATE TABLE chatbot.operation_phrase (
@@ -129,7 +125,7 @@ CREATE TABLE chatbot.operation_phrase (
 );
 
 
-DROP TABLE chatbot.operation_phrase;
+
 
 ------------------------------Insertion dans les tables operations--------------------------------------
 
@@ -185,14 +181,7 @@ TRUNCATE TABLE chatbot.operation_phrase RESTART IDENTITY;
 
 
 --Table convesation
-CREATE TABLE chatbot.conversations(
-    id_conv SERIAL PRIMARY KEY,
-    id_user INTEGER NOT NULL REFERENCES auth.users(id_user) ON DELETE CASCADE,
-    id_intent INTEGER NOT NULL REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
-    message_user TEXT NOT NULL,
-    reponse_bot TEXT,
-    dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+
 
 SELECT * FROM chatbot.conversations;
 

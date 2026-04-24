@@ -101,53 +101,6 @@ def index():
 
 
 
-
-# ================================================================
-# ROUTE REGISTER  : Api : http://localhost:5000/api/auth/dashboard
-# ================================================================
-@auth_bp.route("/dashboard", methods=["GET"])
-def dashboard():
-    return render_template("dashboard.html")
-
-
-@auth_bp.route("/conversations", methods=["GET"])
-def conversations_page():
-    return render_template("conversation.html")
-
-
-@auth_bp.route("/discussion", methods=["GET"])
-def get_conversations():
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT id_conv, id_user, message_user, reponse_bot,
-               id_operation, confidence, created_at
-        FROM chatbot.conversations
-        ORDER BY created_at DESC
-        LIMIT 100
-    """)
-
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    data = []
-
-    for r in rows:
-        data.append({
-            "id": r[0],
-            "user_id": r[1],
-            "message": r[2],
-            "response": r[3],
-            "operation": r[4],
-            "confidence": float(r[5]) if r[5] else 0,
-            "date": r[6].strftime("%Y-%m-%d %H:%M")
-        })
-
-    return jsonify(data)
-
 # ===============================================================
 # ROUTE REGISTER  : Api : http://localhost:5000/api/auth/register
 # ===============================================================
@@ -240,21 +193,21 @@ def login():
         session['user_name'] = user['nom']
         session['is_admin'] = user['est_admin']
 
-        # 🔥 CAS API
+        # CAS API
         if request.is_json:
             return jsonify({
                 "status": "success",
                 "is_admin": user["est_admin"],
-                "redirect": "/api/auth/dashboard" if user["est_admin"] else "/api/auth/chatbot",
+                "redirect": "/api/dashboard/dashboard_index" if user["est_admin"] else "/api/auth/chatbot",
                 "user": {
                     "id": user["id_user"],
                     "nom": user["nom"]
                 }
             })
 
-        # 🔥 CAS HTML
+        # CAS HTML
         if user["est_admin"]:
-            return redirect(url_for('auth.dashboard'))
+            return redirect(url_for('dashboard.dashboard_index'))
         else:
             return redirect(url_for('auth.chatbot'))
 
