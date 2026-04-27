@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>FAQ Admin</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+
+<body>
+
+<div class="main">
+
+  <h1>📚 Gestion FAQ</h1>
+
+  <!-- FORM AJOUT -->
+  <div class="faq-form">
+
+    <input type="number" id="intent" placeholder="ID Intent">
+    <input type="text" id="question" placeholder="Question utilisateur">
+    <input type="text" id="response" placeholder="Réponse bot">
+
+    <button onclick="addFaq()">Ajouter</button>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="faq-search">
+    <input type="text" id="search" placeholder="Rechercher...">
+    <button onclick="searchFaq()">Rechercher</button>
+  </div>
+
+  <!-- LIST -->
+  <div id="faqList" class="faq-list"></div>
+
+</div>
+
+<script src="{{ url_for('static', filename='faq.js') }}"></script>
+
+</body>
+</html>
