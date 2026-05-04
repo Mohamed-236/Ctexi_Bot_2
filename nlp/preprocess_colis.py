@@ -5,5 +5,5 @@ def est_code_colis(message):
     match = re.search(pattern, message.upper())
 
     if match:
-        return match.group()  # ✅ STRING
+        return match.group() 
     return None

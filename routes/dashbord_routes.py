@@ -476,3 +476,76 @@ def toggle_operation(id_op):
     conn.close()
 
     return jsonify({"status": "updated"})
+
+
+# Patterns operations
+
+
+@dashboard_bp.route("/operations/patterns/<int:op_id>", methods=["GET"])
+def get_patterns(op_id):
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id_phrase, phrase, est_actif, date_creation
+        FROM chatbot.operation_phrase
+        WHERE id_operation = %s
+        ORDER BY id_phrase DESC
+    """, (op_id,))
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return jsonify([
+        {
+            "id": r[0],
+            "phrase": r[1],
+            "active": r[2],
+            "date": r[3].strftime("%Y-%m-%d")
+        }
+        for r in rows
+    ])
+
+
+
+@dashboard_bp.route("/operations/patterns/add", methods=["POST"])
+def add_pattern():
+
+    data = request.get_json()
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO chatbot.operation_phrase (id_operation, id_intent, phrase)
+        VALUES (%s, %s, %s)
+    """, (data["operation_id"], data["intent_id"], data["phrase"]))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({"status": "created"})
+
+
+
+@dashboard_bp.route("/operations/patterns/delete/<int:id_phrase>", methods=["DELETE"])
+def delete_pattern(id_phrase):
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        DELETE FROM chatbot.operation_phrase
+        WHERE id_phrase = %s
+    """, (id_phrase,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({"status": "deleted"})
+
+

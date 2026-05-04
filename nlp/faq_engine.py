@@ -139,24 +139,69 @@ def build_response(base: dict, confidence: float):
 # ==========================================================
 # MOTEUR PRINCIPAL
 # ==========================================================
+def enlever_salutation(message: str):
+    salutations = ["salut", "bonjour", "bonsoir", "hello", "cc", "coucou"]
+
+    mots = message.lower().split()
+
+    if mots and mots[0] in salutations:
+        return " ".join(mots[1:]), mots[0]
+
+    return message, None
+
 def trouver_meilleure_correspondance(message_utilisateur, id_user):
 
     logging.info(f"Message: {message_utilisateur}")
 
     # ==========================
-    # INTENT SIMPLE
+    # 🔥 MESSAGE ORIGINAL
     # ==========================
-    intent_light = detecter_intent_light(message_utilisateur)
+    message_brut = message_utilisateur
 
-    if intent_light:
+    # ==========================
+    # 🔥 NETTOYAGE NLP
+    # ==========================
+    message_clean = nettoyer_message(message_utilisateur)
+
+    # ==========================
+    # 🔥 INTENT SIMPLE (PRIORITAIRE)
+    # ==========================
+    intent_light = detecter_intent_light(message_clean)
+
+    if intent_light and len(message_clean.split()) <= 3:
         return build_response({
             "type": intent_light,
             "reponse": repondre_intent_light(intent_light),
-            "id_intent": None,
-            "id_operation": None,
             "trouve": True
         }, 0.95)
 
+    # ==========================
+    # 🔥 SUPPRIMER SALUTATION
+    # ==========================
+    message_sans_salut, salutation_detectee = enlever_salutation(message_clean)
+
+    salutation_response = None
+
+    if salutation_detectee:
+        intent_salut = detecter_intent_light(salutation_detectee)
+        if intent_salut:
+            salutation_response = repondre_intent_light(intent_salut)
+
+    # si rien après salut → répondre juste salut
+    if not message_sans_salut.strip():
+        if salutation_response:
+            return build_response({
+                "type": "salutation",
+                "reponse": salutation_response,
+                "trouve": True
+            }, 0.95)
+
+    # message final à traiter
+    message_utilisateur = message_sans_salut if message_sans_salut else message_clean
+
+    # ==========================
+    # 🔥 OPERATION DETECTION
+    # ==========================
     operation = detecter_operation(message_utilisateur)
 
     # ==========================
@@ -164,50 +209,50 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
     # ==========================
     if operation == "suivi_colis":
 
-        info = get_colis_info(message_utilisateur, id_user)
+        info = get_colis_info(message_brut, id_user)
 
         if info:
-            return build_response({
-                "type": "tracking",
-                "reponse": "Voici les informations de votre colis",
-                "data": info,
-                "id_operation": "suivi_colis",
-                "trouve": True
-            }, 1.0)
+            reponse = "Voici les informations de votre colis"
 
-        code = est_code_colis(message_utilisateur)
+        else:
+            code = est_code_colis(message_brut)
 
-        if code:
-            return build_response({
-                "type": "tracking_not_found",
-                "reponse": "Aucun colis trouvé ou code non attribué a l'utilisateur connecté.",
-                "trouve": False
-            }, 0.9)
+            if code:
+                reponse = "Aucun colis trouvé ou code non attribué."
+
+            else:
+                reponse = "Veuillez entrer votre code colis CTExI."
+
+        if salutation_response:
+            reponse = f"{salutation_response}\n\n👉 {reponse}"
 
         return build_response({
-            "type": "tracking_request",
-            "reponse": "Veuillez entrer votre code colis CTExI pour voir les informations:",
-            "trouve": True
-        }, 0.8)
+            "type": "tracking",
+            "reponse": reponse,
+            "data": info if info else None,
+            "trouve": bool(info)
+        }, 1.0 if info else 0.8)
 
     # ==========================
     # CONVERSION
     # ==========================
     if operation == "conversion":
-        result = convertir_operation(message_utilisateur)
+
+        result = convertir_operation(message_brut)
 
         if result:
-            return build_response({
-                "type": "conversion",
-                "reponse": f"{result['montant']} {result['source']} ≈ {result['resultat']} {result['cible']}",
-                "trouve": True
-            }, 1.0)
+            reponse = f"{result['montant']} {result['source']} ≈ {result['resultat']} {result['cible']}"
+        else:
+            reponse = "Exemple : 5000 FCFA en EUR"
+
+        if salutation_response:
+            reponse = f"{salutation_response}\n\n👉 {reponse}"
 
         return build_response({
-            "type": "conversion_help",
-            "reponse": "Veuillez préciser le montant et les devises.\nExemple : 5000 FCFA en EUR",
-            "trouve": True
-        }, 0.7)
+            "type": "conversion",
+            "reponse": reponse,
+            "trouve": bool(result)
+        }, 1.0 if result else 0.7)
 
     # ==========================
     # AGENT
@@ -216,19 +261,17 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
 
         agent = get_agent()
 
-        if agent:
-            return build_response({
-                "type": "agent",
-                "reponse": "Je vous mets en relation avec un agent",
-                "agent": agent,
-                "trouve": True
-            }, 1.0)
+        reponse = "Je vous mets en relation avec un agent" if agent else "Aucun agent disponible."
+
+        if salutation_response:
+            reponse = f"{salutation_response}\n\n👉 {reponse}"
 
         return build_response({
-            "type": "fallback",
-            "reponse": "Aucun agent disponible.",
-            "trouve": False
-        }, 0.6)
+            "type": "agent" if agent else "fallback",
+            "reponse": reponse,
+            "agent": agent,
+            "trouve": bool(agent)
+        }, 1.0 if agent else 0.6)
 
     # ==========================
     # SERVICES
@@ -237,15 +280,35 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
 
         services = get_services()
 
+        reponse = "Voici nos services disponibles"
+
+        if salutation_response:
+            reponse = f"{salutation_response}\n\n👉 {reponse}"
+
         return build_response({
             "type": "service",
-            "reponse": "Voici nos services disponibles",
+            "reponse": reponse,
             "services": services,
             "trouve": True
         }, 1.0)
 
     # ==========================
-    # FAQ
+    # 🔥 BLOQUER FAQ SI MESSAGE TROP COURT
+    # ==========================
+    if len(message_utilisateur.split()) <= 2:
+        reponse = "Pouvez-vous préciser votre demande ?"
+
+        if salutation_response:
+            reponse = f"{salutation_response}\n\n👉 {reponse}"
+
+        return build_response({
+            "type": "fallback",
+            "reponse": reponse,
+            "trouve": False
+        }, 0.4)
+
+    # ==========================
+    # FAQ (embedding)
     # ==========================
     embedding_message = modele_embedding.encode(
         [message_utilisateur],
@@ -254,41 +317,39 @@ def trouver_meilleure_correspondance(message_utilisateur, id_user):
 
     faq, score = rechercher_faq_top_k(embedding_message)
 
-    if faq:
+    if faq and score >= 0.7:
 
-        if faq["type"] == "incertain":
-            return build_response({
-                "type": "faq_incertain",
-                "reponse": faq["faq"]["reponse_bot"],
-                "suggestions": faq["suggestions"],
-                "id_intent": faq["faq"]["id_intent"],
-                "id_operation": None,
-                "trouve": True
-            }, score)
+        reponse = faq["faq"]["reponse_bot"]
+
+        if salutation_response:
+            reponse = f"{salutation_response}\n\n👉 {reponse}"
 
         return build_response({
             "type": "faq",
-            "reponse": faq["faq"]["reponse_bot"],
-            "id_intent": faq["faq"]["id_intent"],
-            "id_operation": None,
+            "reponse": reponse,
             "trouve": True
         }, score)
 
     # ==========================
-    # FALLBACK
+    # FALLBACK FINAL
     # ==========================
     agent = get_agent()
+
+    reponse = "Je ne comprends pas votre demande.Merci de contacter un agent pour vous assiter."
+
+    if salutation_response:
+        reponse = f"{salutation_response}\n\n👉 {reponse}"
 
     if agent:
         return build_response({
             "type": "agent",
-            "reponse": "Je ne suis pas sûr de comprendre. Contactez un agent.",
+            "reponse": reponse,
             "agent": agent,
             "trouve": False
         }, 0.5)
 
     return build_response({
         "type": "fallback",
-        "reponse": "Je ne comprends pas votre demande.",
+        "reponse": reponse,
         "trouve": False
     }, 0.3)

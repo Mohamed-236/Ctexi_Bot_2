@@ -43,7 +43,7 @@ def extraire_donnees_conversion(message):
     positions = []
 
     for mot, code in MAPPING_DEVISES.items():
-        # 🔥 mot complet uniquement
+        # mot complet uniquement
         pattern = r"\b" + re.escape(mot) + r"\b"
         match = re.search(pattern, message)
 
@@ -56,7 +56,7 @@ def extraire_donnees_conversion(message):
     # trier
     positions.sort()
 
-    # 🔥 éviter doublon (XOF, XOF)
+    # éviter doublon (XOF, XOF)
     codes_uniques = []
     for _, code in positions:
         if code not in codes_uniques:
