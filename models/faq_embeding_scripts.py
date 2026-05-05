@@ -6,51 +6,54 @@ import psycopg2
 import psycopg2.extras
 from models.db_connect import get_db_connection
 
-# ================================
-# CHARGEMENT DU MODELE
-# ================================
-# model = SentenceTransformer("all-MiniLM-L6-v2")
-# model = SentenceTransformer("all-mpnet-base-v2")
+# ==========================
+# MODELE
+# ==========================
 model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
-# ================================
-# FONCTION PRINCIPALE
-# ================================
-def generate_faq_embeddings():
+
+# ==========================
+# GENERATION EMBEDDINGS
+# ==========================
+def generate_intent_embeddings():
     """
-    1. Se connecte à la base de données
-    2. Récupère les FAQ sans embedding
-    3. Génère leur embedding
-    4. Sauvegarde le vecteur en base
+    Génère les embeddings pour intent_examples
     """
+
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Récupérer uniquement les FAQ sans embedding
+    # 🔥 IMPORTANT : nouvelle table
     cur.execute("""
-        SELECT id_faq, message_user
-        FROM chatbot.faq
+        SELECT id, phrase
+        FROM chatbot.intent_examples
         WHERE embedding IS NULL
     """)
-    faq_list = cur.fetchall()
-    print(f"{len(faq_list)} FAQ à traiter...")
 
-    for faq in faq_list:
-        # Génération embedding (numpy array)
-        vec = model.encode(faq["message_user"])
+    rows = cur.fetchall()
+    print(f"{len(rows)} phrases à traiter...")
 
-        # ❌ Plus besoin de conversion pgvector(), on passe directement le numpy array
-        cur.execute(
-            "UPDATE chatbot.faq SET embedding = %s WHERE id_faq = %s",
-            (vec, faq["id_faq"])
-        )
+    for row in rows:
+        # 🔥 Nettoyage léger (important)
+        phrase = row["phrase"].strip().lower()
+
+        # Génération embedding
+        vec = model.encode(phrase)
+
+        # Sauvegarde
+        cur.execute("""
+            UPDATE chatbot.intent_examples
+            SET embedding = %s
+            WHERE id = %s
+        """, (vec, row["id"]))
 
     conn.commit()
     cur.close()
     conn.close()
-    print("Embeddings FAQ générés avec succès ✅")
 
-# ================================
-# POINT D’ENTRÉE DU SCRIPT
-# ================================
+    print("Embeddings générés avec succès ✅")
+
+# ==========================
+# MAIN
+# ==========================
 if __name__ == "__main__":
-    generate_faq_embeddings()
+    generate_intent_embeddings()
