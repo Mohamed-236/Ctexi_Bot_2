@@ -422,3 +422,58 @@ window.addEventListener("load", () => {
     document.body.classList.add("show-chatbot");
   }, 1200);
 });
+
+
+
+
+
+// ==========================================================
+// 🎤 VOIX - SPEECH TO TEXT
+// ==========================================================
+
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+let recognition;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = "fr-FR";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+} else {
+  console.warn("SpeechRecognition non supporté sur ce navigateur");
+}
+
+// 🎤 Bouton micro (à créer dans HTML)
+const micButton = document.querySelector("#mic-btn");
+
+if (micButton && recognition) {
+  micButton.addEventListener("click", () => {
+    recognition.start();
+    micButton.classList.add("listening");
+  });
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+
+    console.log("🎤 Texte reconnu :", transcript);
+
+    // remplir input automatiquement
+    messageInput.value = transcript;
+    messageInput.dispatchEvent(new Event("input"));
+
+    // envoyer automatiquement
+    setTimeout(() => {
+      sendMessageButton.click();
+    }, 300);
+  };
+
+  recognition.onerror = (err) => {
+    console.error("Erreur reconnaissance vocale :", err);
+  };
+
+  recognition.onend = () => {
+    micButton.classList.remove("listening");
+  };
+}
