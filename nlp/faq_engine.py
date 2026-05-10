@@ -11,6 +11,7 @@ import psycopg2.extras
 import logging
 import random
 import os
+import markdown
 
 from nlp.netoyage import nettoyer_message
 from router.operation_router import detecter_operation
@@ -26,7 +27,6 @@ from services.tracking_service import get_colis_info
 import google.generativeai as genai
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-# gemini_model = genai.GenerativeModel("models/gemini-2.5-flash")
 
 gemini_model = genai.GenerativeModel(
     "models/gemini-flash-lite-latest"
@@ -51,13 +51,23 @@ CACHE_INTENTS = []
 # CHARGER INTENTS
 # ==========================================================
 def charger_intents():
+
     global CACHE_INTENTS
 
     conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cur = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cur.execute("""
-        SELECT id, id_intent, sous_intent, phrase, mots_cles, embedding
+        SELECT
+            id,
+            id_intent,
+            sous_intent,
+            phrase,
+            mots_cles,
+            embedding
         FROM chatbot.intent_examples
         WHERE embedding IS NOT NULL
     """)
@@ -78,10 +88,11 @@ def calculer_boost_keywords(message, mots_cles):
     if not mots_cles:
         return 0
 
-    message = message.lower()
     score = 0
+    message = message.lower()
 
     for mot in mots_cles:
+
         if mot.lower() in message:
             score += 0.08
 
@@ -89,41 +100,59 @@ def calculer_boost_keywords(message, mots_cles):
 
 
 # ==========================================================
-# INTENT DETECTION
+# DETECTION INTENTION
 # ==========================================================
 def detecter_intention(message):
 
     if not CACHE_INTENTS:
         charger_intents()
 
-    emb_msg = modele_embedding.encode([message], normalize_embeddings=True)
+    emb_msg = modele_embedding.encode(
+        [message],
+        normalize_embeddings=True
+    )
 
     embeddings = np.array([
         np.array(i["embedding"], dtype=float)
         for i in CACHE_INTENTS
     ])
 
-    scores = cosine_similarity(emb_msg, embeddings)[0]
+    scores = cosine_similarity(
+        emb_msg,
+        embeddings
+    )[0]
 
     final_scores = []
 
     for idx, score in enumerate(scores):
 
         item = CACHE_INTENTS[idx]
-        boost = calculer_boost_keywords(message, item["mots_cles"])
+
+        boost = calculer_boost_keywords(
+            message,
+            item["mots_cles"]
+        )
+
         final_scores.append(score + boost)
 
     best_index = np.argmax(final_scores)
+
     best_score = final_scores[best_index]
-    best = CACHE_INTENTS[best_index]
+    best_data = CACHE_INTENTS[best_index]
 
-    logging.info(f"INTENT={best['id_intent']} SCORE={best_score}")
+    logging.info(
+        f"INTENT={best_data['id_intent']} SCORE={best_score}"
+    )
 
-    return best["id_intent"], best["sous_intent"], best_score
+    return (
+        best_data["id_intent"],
+        best_data["sous_intent"],
+        best_score
+    )
 
 
 # ==========================================================
-# DB RESPONSE
+# RECUPERER REPONSE DB
 # ==========================================================
 def get_reponse_intention(id_intent, sous_intent):
 
@@ -133,7 +162,8 @@ def get_reponse_intention(id_intent, sous_intent):
     cur.execute("""
         SELECT reponse
         FROM chatbot.intent_responses
-        WHERE id_intent = %s AND sous_intent = %s
+        WHERE id_intent = %s
+        AND sous_intent = %s
     """, (id_intent, sous_intent))
 
     rows = cur.fetchall()
@@ -141,14 +171,114 @@ def get_reponse_intention(id_intent, sous_intent):
     cur.close()
     conn.close()
 
-    return random.choice(rows)[0] if rows else None
+    if not rows:
+        return None
+
+    return random.choice(rows)[0]
 
 
 # ==========================================================
-# GEMINI REFORMULATION (AMELIORATION STYLE)
+# MEMOIRE CONVERSATIONNELLE
 # ==========================================================
+def get_conversation_history(id_user, limit=6):
+
+    try:
+
+        conn = get_db_connection()
+
+        cur = conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+
+        cur.execute("""
+            SELECT
+                message_user,
+                reponse_bot
+            FROM chatbot.conversations
+            WHERE id_user = %s
+            ORDER BY created_at DESC
+            LIMIT %s
+        """, (id_user, limit))
+
+        rows = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        history = []
+
+        rows.reverse()
+
+        for row in rows:
+
+            if row["message_user"]:
+
+                history.append({
+                    "role": "user",
+                    "content": row["message_user"]
+                })
+
+            if row["reponse_bot"]:
+
+                history.append({
+                    "role": "assistant",
+                    "content": row["reponse_bot"]
+                })
+
+        return history
+
+    except Exception as e:
+
+        logging.error(f"HISTORY ERROR: {e}")
+
+        return []
+
+
 # ==========================================================
-# GEMINI REFORMULATION AVANCEE CTEXI
+# SAUVEGARDE CONVERSATION
+# ==========================================================
+def sauvegarder_conversation(
+    id_user,
+    message_user,
+    reponse_bot,
+    id_intent=None,
+    confidence=None
+):
+
+    try:
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            INSERT INTO chatbot.conversations(
+                id_user,
+                message_user,
+                reponse_bot,
+                id_intent,
+                confidence
+            )
+            VALUES(%s,%s,%s,%s,%s)
+        """, (
+            id_user,
+            message_user,
+            reponse_bot,
+            id_intent,
+            confidence
+        ))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+
+        logging.error(f"SAVE CONVERSATION ERROR: {e}")
+
+
+# ==========================================================
+# GEMINI REFORMULATION
 # ==========================================================
 def reformuler_avec_gemini(
     message_user,
@@ -158,23 +288,17 @@ def reformuler_avec_gemini(
 
     try:
 
-        # ==================================================
-        # HISTORIQUE CONVERSATION
-        # ==================================================
         historique = ""
 
         if history:
 
-            for item in history[-5:]:
+            for item in history[-6:]:
 
                 role = item.get("role", "user")
                 content = item.get("content", "")
 
                 historique += f"{role}: {content}\n"
 
-        # ==================================================
-        # PROMPT CTEXI PREMIUM
-        # ==================================================
         prompt = f"""
 Tu es CTEXI-BOT,
 l’assistant virtuel officiel de :
@@ -188,46 +312,25 @@ Devise :
 🏢 A PROPOS DE CTEXI
 ==================================================
 
-CTEXI est une entreprise spécialisée dans :
+CTEXI est spécialisée dans :
 
-• l’achat de produits en Chine
-• le sourcing fournisseurs
-• le transport Chine → Afrique
-• les paiements internationaux
-• le voyage Chine
-• les formations import-export
-
-Services principaux :
-
-1. CTEXI BUY
-→ recherche fournisseurs
-→ négociation
-→ contrôle qualité
-
-2. CTEXI CARGO
-→ transport maritime
-→ transport aérien
-→ suivi colis
-
-3. CTEXI PAY
-→ paiements fournisseurs
-→ Alipay
-→ WeChat Pay
-→ conversion devise
-
-4. CTEXI TRAVEL
-→ visa Chine
-→ billet avion
-→ hôtel
-
-5. CTEXI ACADÉMIE
-→ formation import-export
-→ Alibaba
-→ sourcing
-→ e-commerce
+• import-export Chine → Afrique
+• sourcing fournisseurs
+• transport colis
+• paiement international
+• visa Chine
+• réservation hôtel
+• formation import-export
 
 ==================================================
-🎯 TON OBJECTIF
+🧠 CONTEXTE CONVERSATIONNEL
+==================================================
+
+Historique récent :
+{historique}
+
+==================================================
+🎯 OBJECTIF
 ==================================================
 
 Tu dois améliorer la réponse donnée afin qu’elle soit :
@@ -237,108 +340,69 @@ Tu dois améliorer la réponse donnée afin qu’elle soit :
 • professionnelle
 • moderne
 • fluide
-• agréable à lire
 
 ==================================================
-💬 STYLE OBLIGATOIRE
+💬 STYLE
 ==================================================
 
-Tu peux utiliser naturellement des expressions comme :
+Tu peux utiliser :
 
-• « Excellente question 😊 »
-• « Très bon choix 👍 »
-• « Avec plaisir »
-• « Pas de souci 👌 »
-• « Nous allons vous accompagner »
+• "Excellente question 😊"
+• "Très bon choix 👍"
+• "Avec plaisir"
+• "Pas de souci 👌"
 
-Tu peux utiliser des emojis MODÉRÉMENT.
-
-Le ton doit être :
-• chaleureux
-• premium
-• rassurant
-• professionnel
+Utilise des emojis modérément.
 
 ==================================================
-📌 STRUCTURE DES RÉPONSES
+📌 FORMAT
 ==================================================
 
-Si la réponse est courte :
-→ phrase simple améliorée
+Si réponse courte :
+→ phrase naturelle
 
-Si la réponse est moyenne :
-→ paragraphes propres
-
-Si la réponse est longue :
-→ structure avec :
-
-✅ titres
-✅ listes à puces
-✅ étapes
-✅ emojis modérés
-
-Exemple :
-
-📦 Voici comment fonctionne notre service :
-
-• Étape 1 : ...
-• Étape 2 : ...
-• Étape 3 : ...
+Si réponse longue :
+→ listes
+→ titres
+→ étapes
 
 ==================================================
-🧠 CONTEXTE CONVERSATIONNEL
-==================================================
-
-Tu dois tenir compte de l’historique conversationnel.
-
-Historique récent :
-{historique}
-
-==================================================
-❌ RÈGLES IMPORTANTES
+❌ IMPORTANT
 ==================================================
 
 INTERDIT :
 - inventer des prix
 - inventer des délais
 - inventer des services
-- modifier les informations
-- répondre hors sujet
 
-Tu dois garder EXACTEMENT le même sens.
+Tu dois garder EXACTEMENT le sens.
 
 ==================================================
-📥 DONNÉES UTILISATEUR
+👤 UTILISATEUR
 ==================================================
 
-Utilisateur :
+Question :
 {message_user}
 
 Réponse brute :
 {reponse_brute}
 
 ==================================================
-📤 RÉSULTAT FINAL
+📤 REPONSE FINALE
 ==================================================
-
-Réécris uniquement la réponse finale améliorée.
 """
 
-        # ==================================================
-        # APPEL GEMINI
-        # ==================================================
         response = gemini_model.generate_content(prompt)
 
-        # ==================================================
-        # VALIDATION
-        # ==================================================
         if response and response.text:
 
             final_text = response.text.strip()
 
-            # éviter réponses trop courtes
             if len(final_text) > 5:
-                return final_text
+
+                html = markdown.markdown(final_text)
+
+                return html
 
         return reponse_brute
 
@@ -348,124 +412,78 @@ Réécris uniquement la réponse finale améliorée.
 
         return reponse_brute
 
+
 # ==========================================================
-# GEMINI DIRECT ANSWER (FALLBACK INTELLIGENT)
+# GEMINI DIRECT ANSWER
 # ==========================================================
-def gemini_direct_answer(message):
+def gemini_direct_answer(message, history=None):
 
     try:
 
+        historique = ""
+
+        if history:
+
+            for item in history[-6:]:
+
+                historique += (
+                    f"{item['role']}: "
+                    f"{item['content']}\n"
+                )
+
         prompt = f"""
-Tu es CTEXI-BOT, l'assistant officiel de l'entreprise CTEXI
-(Cherif Trans Expert International).
+Tu es CTEXI-BOT,
+assistant officiel de CTEXI.
 
 ==================================================
-🏢 A PROPOS DE CTEXI
+🏢 ENTREPRISE
 ==================================================
 
-Devise :
-"Au cœur du Sahel, Au Service du Monde."
+CTEXI aide les clients dans :
 
-CTEXI accompagne les clients du Burkina Faso et d'Afrique
-dans leurs opérations avec la Chine.
-
-Services principaux :
-
-1. CTEXI BUY
-- recherche fournisseurs
-- achat produits Chine
-- négociation prix
-- contrôle qualité
-
-2. CTEXI CARGO
-- transport colis Chine → Burkina Faso
-- fret aérien et maritime
-- suivi colis
-
-3. CTEXI PAY
-- paiement fournisseurs chinois
-- Alipay
-- WeChat Pay
-- conversion devises
-
-4. CTEXI TRAVEL
-- visa Chine
-- réservation hôtel
-- billet avion
-
-5. CTEXI ACADÉMIE
-- formations import-export
-- Alibaba
-- sourcing
-- e-commerce
+• achat Chine
+• sourcing fournisseur
+• transport colis
+• paiement Chine
+• visa Chine
+• réservation hôtel
+• formation import-export
 
 ==================================================
-🎯 TON OBJECTIF
+🧠 HISTORIQUE CONVERSATION
 ==================================================
 
-Tu dois répondre comme un véritable assistant premium.
-
-Tu aides le client :
-- clairement
-- rapidement
-- naturellement
-- professionnellement
+{historique}
 
 ==================================================
-💬 STYLE OBLIGATOIRE
+🎯 OBJECTIF
+==================================================
+
+Réponds naturellement,
+professionnellement
+et intelligemment.
+
+==================================================
+💬 STYLE
 ==================================================
 
 Le ton doit être :
-- humain
-- chaleureux
-- professionnel
-- moderne
-- intelligent
 
-Tu peux utiliser :
-- emojis modérés 😊
-- expressions naturelles :
-  "Très bon choix 👍"
-  "Avec plaisir"
-  "Bonne question 😊"
+• humain
+• premium
+• rassurant
+• chaleureux
 
-==================================================
-📌 FORMAT DES RÉPONSES
-==================================================
-
-Si réponse courte :
-→ phrase fluide naturelle
-
-Si réponse moyenne :
-→ paragraphes clairs
-
-Si réponse longue :
-→ structure avec :
-• listes
-• titres
-• étapes
+Tu peux utiliser des emojis modérés 😊
 
 ==================================================
 ❌ INTERDIT
 ==================================================
 
-- ne jamais inventer de faux prix
-- ne jamais inventer de faux délais
-- ne jamais inventer de faux services
-- si information inconnue :
+- ne pas inventer de prix
+- ne pas inventer de délais
+- si info inconnue :
   inviter le client à contacter un agent
-
-==================================================
-📌 IMPORTANT
-==================================================
-
-Tu représentes une vraie entreprise professionnelle.
-
-Tu dois donner l'impression :
-- d'un assistant haut de gamme
-- intelligent
-- rassurant
-- utile
 
 ==================================================
 👤 QUESTION CLIENT
@@ -474,14 +492,19 @@ Tu dois donner l'impression :
 {message}
 
 ==================================================
-📤 RÉPONSE
+📤 REPONSE
 ==================================================
 """
 
         response = gemini_model.generate_content(prompt)
 
         if response and response.text:
-            return response.text.strip()
+
+            html = markdown.markdown(
+                response.text.strip()
+            )
+
+            return html
 
         return "Je ne peux pas répondre pour le moment."
 
@@ -489,10 +512,15 @@ Tu dois donner l'impression :
 
         logging.error(f"GEMINI FALLBACK ERROR: {e}")
 
-        return (
-            "Merci pour votre message.Notre assistant est momentanément indisponible. "
-            "Veuillez réessayer dans quelques instants 😊"
-        )
+        return """
+<p>
+Merci pour votre message 😊<br><br>
+Notre assistant est momentanément indisponible.
+Veuillez réessayer dans quelques instants.
+</p>
+"""
+
+
 # ==========================================================
 # OPERATIONS
 # ==========================================================
@@ -501,7 +529,9 @@ def gerer_operations(message, id_user):
     op = detecter_operation(message)
 
     if op == "suivi_colis":
+
         info = get_colis_info(message, id_user)
+
         return {
             "type": "tracking",
             "reponse": "Colis trouvé" if info else "Introuvable",
@@ -510,7 +540,9 @@ def gerer_operations(message, id_user):
         }
 
     if op == "conversion":
+
         result = convertir_operation(message)
+
         return {
             "type": "conversion",
             "reponse": "Conversion OK" if result else "Erreur",
@@ -518,7 +550,9 @@ def gerer_operations(message, id_user):
         }
 
     if op == "contact_agent":
+
         agent = get_agent()
+
         return {
             "type": "agent",
             "reponse": "Agent disponible" if agent else "Aucun agent",
@@ -527,7 +561,9 @@ def gerer_operations(message, id_user):
         }
 
     if op == "service_info":
+
         services = get_services()
+
         return {
             "type": "service",
             "reponse": "Services disponibles",
@@ -539,44 +575,93 @@ def gerer_operations(message, id_user):
 
 
 # ==========================================================
-# MAIN ENGINE (HYBRIDE FINAL)
+# MAIN ENGINE FINAL
 # ==========================================================
-def trouver_meilleure_correspondance(message, id_user):
+def trouver_meilleure_correspondance(
+    message,
+    id_user
+):
 
     logging.info(f"MESSAGE: {message}")
 
+    message_original = message
+
     message = nettoyer_message(message)
 
-    # 1. OPERATIONS
+    # ======================================================
+    # MEMOIRE CONVERSATIONNELLE
+    # ======================================================
+    history = get_conversation_history(id_user)
+
+    # ======================================================
+    # OPERATIONS
+    # ======================================================
     op = gerer_operations(message, id_user)
+
     if op:
+
+        sauvegarder_conversation(
+            id_user=id_user,
+            message_user=message_original,
+            reponse_bot=op["reponse"]
+        )
+
         return op
 
-    # 2. INTENT DETECTION
+    # ======================================================
+    # INTENT DETECTION
+    # ======================================================
     intent_id, sous_intent, score = detecter_intention(message)
 
-    # 3. SI BON MATCH DB
+    # ======================================================
+    # SI MATCH TROUVE
+    # ======================================================
     if score >= SEUIL_INTENT:
 
-        reponse_brute = get_reponse_intention(intent_id, sous_intent)
+        reponse_brute = get_reponse_intention(
+            intent_id,
+            sous_intent
+        )
 
         if reponse_brute:
 
             reponse_finale = reformuler_avec_gemini(
-                message,
-                reponse_brute
+                message_user=message,
+                reponse_brute=reponse_brute,
+                history=history
+            )
+
+            sauvegarder_conversation(
+                id_user=id_user,
+                message_user=message_original,
+                reponse_bot=reponse_finale,
+                id_intent=intent_id,
+                confidence=score
             )
 
             return {
                 "type": "intent",
                 "intent_id": intent_id,
+                "sous_intent": sous_intent,
                 "reponse": reponse_finale,
                 "trouve": True,
                 "confidence": float(score)
             }
 
-    # 4. FALLBACK INTELLIGENT (IMPORTANT)
-    reponse_llm = gemini_direct_answer(message)
+    # ======================================================
+    # FALLBACK GEMINI
+    # ======================================================
+    reponse_llm = gemini_direct_answer(
+        message,
+        history
+    )
+
+    sauvegarder_conversation(
+        id_user=id_user,
+        message_user=message_original,
+        reponse_bot=reponse_llm,
+        confidence=score
+    )
 
     return {
         "type": "llm_fallback",

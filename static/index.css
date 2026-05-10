@@ -623,3 +623,52 @@ h1.left-align {
 .message.bot .text {
     white-space: pre-wrap;
 }
+
+
+
+.message-text {
+    line-height: 1.7;
+    font-size: 15px;
+    word-wrap: break-word;
+}
+
+.message-text p {
+    margin-bottom: 10px;
+}
+
+.message-text ul,
+.message-text ol {
+    padding-left: 20px;
+    margin: 10px 0;
+}
+
+.message-text li {
+    margin-bottom: 8px;
+}
+
+.message-text strong {
+    font-weight: bold;
+}
+
+.message-text h1,
+.message-text h2,
+.message-text h3 {
+    margin-top: 12px;
+    margin-bottom: 8px;
+}
+
+.bot-message .message-text {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
