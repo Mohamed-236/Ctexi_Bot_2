@@ -20,13 +20,16 @@ from services.controler.conversion_controler import convertir_operation
 from services.agent_service import get_agent
 from services.service_info import get_services
 from services.tracking_service import get_colis_info
+from nlp.preprocess_colis import est_code_colis
 
-# ==========================================================
-# GEMINI
-# ==========================================================
 import google.generativeai as genai
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# ==========================================================
+# GEMINI CONFIG
+# ==========================================================
+genai.configure(
+    api_key=os.getenv("GEMINI_API_KEY")
+)
 
 gemini_model = genai.GenerativeModel(
     "models/gemini-flash-lite-latest"
@@ -77,30 +80,12 @@ def charger_intents():
     cur.close()
     conn.close()
 
-    logging.info(f"INTENTS CHARGÉS: {len(CACHE_INTENTS)}")
-
-
-# ==========================================================
-# BOOST MOTS CLES
-# ==========================================================
-def calculer_boost_keywords(message, mots_cles):
-
-    if not mots_cles:
-        return 0
-
-    score = 0
-    message = message.lower()
-
-    for mot in mots_cles:
-
-        if mot.lower() in message:
-            score += 0.08
-
-    return score
-
+    logging.info(
+        f"INTENTS CHARGÉS: {len(CACHE_INTENTS)}"
+    )
 
 # ==========================================================
-# DETECTION INTENTION
+# DETECTION INTENT
 # ==========================================================
 def detecter_intention(message):
 
@@ -122,22 +107,10 @@ def detecter_intention(message):
         embeddings
     )[0]
 
-    final_scores = []
+    best_index = np.argmax(scores)
 
-    for idx, score in enumerate(scores):
+    best_score = float(scores[best_index])
 
-        item = CACHE_INTENTS[idx]
-
-        boost = calculer_boost_keywords(
-            message,
-            item["mots_cles"]
-        )
-
-        final_scores.append(score + boost)
-
-    best_index = np.argmax(final_scores)
-
-    best_score = final_scores[best_index]
     best_data = CACHE_INTENTS[best_index]
 
     logging.info(
@@ -150,13 +123,13 @@ def detecter_intention(message):
         best_score
     )
 
-
 # ==========================================================
-# RECUPERER REPONSE DB
+# GET REPONSE DB
 # ==========================================================
 def get_reponse_intention(id_intent, sous_intent):
 
     conn = get_db_connection()
+
     cur = conn.cursor()
 
     cur.execute("""
@@ -164,7 +137,10 @@ def get_reponse_intention(id_intent, sous_intent):
         FROM chatbot.intent_responses
         WHERE id_intent = %s
         AND sous_intent = %s
-    """, (id_intent, sous_intent))
+    """, (
+        id_intent,
+        sous_intent
+    ))
 
     rows = cur.fetchall()
 
@@ -176,11 +152,13 @@ def get_reponse_intention(id_intent, sous_intent):
 
     return random.choice(rows)[0]
 
-
 # ==========================================================
-# MEMOIRE CONVERSATIONNELLE
+# HISTORY
 # ==========================================================
-def get_conversation_history(id_user, limit=6):
+def get_conversation_history(
+    id_user,
+    limit=6
+):
 
     try:
 
@@ -198,16 +176,19 @@ def get_conversation_history(id_user, limit=6):
             WHERE id_user = %s
             ORDER BY created_at DESC
             LIMIT %s
-        """, (id_user, limit))
+        """, (
+            id_user,
+            limit
+        ))
 
         rows = cur.fetchall()
 
         cur.close()
         conn.close()
 
-        history = []
-
         rows.reverse()
+
+        history = []
 
         for row in rows:
 
@@ -229,13 +210,14 @@ def get_conversation_history(id_user, limit=6):
 
     except Exception as e:
 
-        logging.error(f"HISTORY ERROR: {e}")
+        logging.error(
+            f"HISTORY ERROR: {e}"
+        )
 
         return []
 
-
 # ==========================================================
-# SAUVEGARDE CONVERSATION
+# SAVE CONVERSATION
 # ==========================================================
 def sauvegarder_conversation(
     id_user,
@@ -248,10 +230,12 @@ def sauvegarder_conversation(
     try:
 
         conn = get_db_connection()
+
         cur = conn.cursor()
 
         cur.execute("""
-            INSERT INTO chatbot.conversations(
+            INSERT INTO chatbot.conversations
+            (
                 id_user,
                 message_user,
                 reponse_bot,
@@ -274,32 +258,20 @@ def sauvegarder_conversation(
 
     except Exception as e:
 
-        logging.error(f"SAVE CONVERSATION ERROR: {e}")
-
+        logging.error(
+            f"DB ERROR: {e}"
+        )
 
 # ==========================================================
-# GEMINI REFORMULATION
+# LLM FORMATTER
+# UTILISÉ UNIQUEMENT POUR LES OPERATIONS
 # ==========================================================
-def reformuler_avec_gemini(
-    message_user,
-    reponse_brute,
-    history=None
+def formatter_operation_avec_llm(
+    type_operation,
+    message
 ):
 
-    try:
-
-        historique = ""
-
-        if history:
-
-            for item in history[-6:]:
-
-                role = item.get("role", "user")
-                content = item.get("content", "")
-
-                historique += f"{role}: {content}\n"
-
-        prompt = f"""
+    prompt = f"""
 Tu es CTEXI-BOT,
 l’assistant virtuel officiel de :
 
@@ -314,45 +286,151 @@ Devise :
 
 CTEXI est spécialisée dans :
 
-• import-export Chine → Afrique
-• sourcing fournisseurs
-• transport colis
-• paiement international
-• visa Chine
-• réservation hôtel
-• formation import-export
+• import-export Chine → Burkina Faso , sourcing fournisseurs (Ctexi buy)
+• transport colis et marchandises (Ctexi cargo)
+• paiement international          (Ctexi pay)
+• réservation hôtel et visa Chine (Ctexi Travel)
+• formation import-export (Ctexi academie)
+
 
 ==================================================
-🧠 CONTEXTE CONVERSATIONNEL
+OBJECTIF
 ==================================================
 
-Historique récent :
+Tu dois UNIQUEMENT améliorer le style du message.
+
+==================================================
+REGLES STRICTES
+==================================================
+
+- ne jamais changer le sens
+- ne jamais ajouter des informations
+- ne jamais inventer
+- réponse courte
+- maximum 2 phrases
+- ton chaleureux
+- ton professionnel
+- emojis modérés
+
+==================================================
+TYPE OPERATION
+==================================================
+
+{type_operation}
+
+==================================================
+MESSAGE ORIGINAL
+==================================================
+
+{message}
+
+==================================================
+SORTIE
+==================================================
+
+Retourne uniquement le message final.
+"""
+
+    try:
+
+        response = gemini_model.generate_content(prompt)
+
+        if response and response.text:
+
+            return markdown.markdown(
+                response.text.strip()
+            )
+
+    except Exception as e:
+
+        logging.error(
+            f"FORMATTER ERROR: {e}"
+        )
+
+    return markdown.markdown(message)
+
+# ==========================================================
+# REFORMULATION INTENT DB
+# ==========================================================
+def reformuler_avec_gemini(
+    message_user,
+    reponse_brute,
+    history=None
+):
+
+    historique = ""
+
+    if history:
+
+        for item in history[-6:]:
+
+            historique += (
+                f"{item['role']}: "
+                f"{item['content']}\n"
+            )
+
+    prompt = f"""
+Tu es CTEXI-BOT,
+l’assistant virtuel officiel de :
+
+Cherif Trans Expert International (CTEXI)
+
+Devise :
+« Au cœur du Sahel, Au Service du Monde »
+
+==================================================
+🏢 A PROPOS DE CTEXI
+==================================================
+
+CTEXI est spécialisée dans :
+
+• import-export Chine → Burkina Faso , sourcing fournisseurs (Ctexi buy)
+• transport colis et marchandises (Ctexi cargo)
+• paiement international          (Ctexi pay)
+• réservation hôtel et visa Chine (Ctexi Travel)
+• formation import-export (Ctexi academie)
+
+==================================================
+HISTORIQUE
+==================================================
+
 {historique}
 
 ==================================================
-🎯 OBJECTIF
+MISSION
 ==================================================
 
-Tu dois améliorer la réponse donnée afin qu’elle soit :
+Tu dois reformuler la réponse
+pour qu'elle soit :
 
-• naturelle
-• humaine
-• professionnelle
-• moderne
-• fluide
+- naturelle
+- moderne
+- fluide
+- professionnelle
+- humaine
 
 ==================================================
-💬 STYLE
+REGLES STRICTES
+==================================================
+
+- garder EXACTEMENT le même sens
+- ne rien inventer
+- ne pas ajouter de prix, si besoin de prix propose une redirection vers un agent
+- ne pas ajouter de délais
+- ne pas ajouter de services
+
+==================================================
+STYLE
 ==================================================
 
 Tu peux utiliser :
 
-• "Excellente question 😊"
-• "Très bon choix 👍"
-• "Avec plaisir"
-• "Pas de souci 👌"
+- emojis modérés
+- listes
+- ton premium
+- ton rassurant
 
-Utilise des emojis modérément.
+
 
 ==================================================
 📌 FORMAT
@@ -366,216 +444,350 @@ Si réponse longue :
 → titres
 → étapes
 
+
 ==================================================
 ❌ IMPORTANT
 ==================================================
 
 INTERDIT :
-- inventer des prix
+- inventer des prix propose plutot une redirection vers un agent
 - inventer des délais
 - inventer des services
 
 Tu dois garder EXACTEMENT le sens.
 
 ==================================================
-👤 UTILISATEUR
+QUESTION UTILISATEUR
 ==================================================
 
-Question :
 {message_user}
 
-Réponse brute :
+==================================================
+REPONSE BRUTE
+==================================================
+
 {reponse_brute}
 
 ==================================================
-📤 REPONSE FINALE
+REPONSE FINALE
 ==================================================
 """
+
+    try:
 
         response = gemini_model.generate_content(prompt)
 
         if response and response.text:
 
-            final_text = response.text.strip()
-
-            if len(final_text) > 5:
-
-                html = markdown.markdown(final_text)
-
-                return html
-
-        return reponse_brute
+            return markdown.markdown(
+                response.text.strip()
+            )
 
     except Exception as e:
 
-        logging.error(f"GEMINI ERROR: {e}")
+        logging.error(
+            f"REFORMULATION ERROR: {e}"
+        )
 
-        return reponse_brute
-
+    return markdown.markdown(reponse_brute)
 
 # ==========================================================
-# GEMINI DIRECT ANSWER
+# GEMINI FALLBACK
 # ==========================================================
-def gemini_direct_answer(message, history=None):
+def gemini_direct_answer(
+    message,
+    history=None
+):
 
-    try:
+    historique = ""
 
-        historique = ""
+    if history:
 
-        if history:
+        for item in history[-6:]:
 
-            for item in history[-6:]:
+            historique += (
+                f"{item['role']}: "
+                f"{item['content']}\n"
+            )
 
-                historique += (
-                    f"{item['role']}: "
-                    f"{item['content']}\n"
-                )
-
-        prompt = f"""
+    prompt = f"""
 Tu es CTEXI-BOT,
 assistant officiel de CTEXI.
 
 ==================================================
-🏢 ENTREPRISE
+A PROPOS DE CTEXI
 ==================================================
 
-CTEXI aide les clients dans :
+CTEXI est spécialisée dans :
 
-• achat Chine
-• sourcing fournisseur
-• transport colis
-• paiement Chine
-• visa Chine
-• réservation hôtel
-• formation import-export
+- import-export Chine
+- achat fournisseur
+- transport colis
+- paiement international
+- visa Chine
+- réservation hôtel
+- formation import-export
 
 ==================================================
-🧠 HISTORIQUE CONVERSATION
+HISTORIQUE
 ==================================================
 
 {historique}
 
 ==================================================
-🎯 OBJECTIF
-==================================================
-
-Réponds naturellement,
-professionnellement
-et intelligemment.
-
-==================================================
-💬 STYLE
+STYLE
 ==================================================
 
 Le ton doit être :
 
-• humain
-• premium
-• rassurant
-• chaleureux
+- professionnel
+- chaleureux
+- moderne
+- humain
 
 Tu peux utiliser des emojis modérés 😊
 
 ==================================================
-❌ INTERDIT
+REGLES IMPORTANTES
 ==================================================
 
-- ne pas inventer de prix
-- ne pas inventer de délais
-- si info inconnue :
-  inviter le client à contacter un agent
+- ne jamais inventer des prix propose plutot une redirection vers un agent
+- ne jamais dire (Nous ne proposons pas la vente d'un truc donné) dis plutot que tu n'a pas acces aux prix et propose plutot une redirection vers un agent
+- ne jamais inventer des délais
+- ne jamais inventer des services
+
+Si l'information n'est pas connue :
+invite le client à contacter un agent.
 
 ==================================================
-👤 QUESTION CLIENT
+REGLES DE SORTIE
+==================================================
+
+INTERDIT :
+
+- "voici la réponse"
+- "voici la reformulation"
+- "je vais reformuler"
+- phrases inutiles
+
+
+Réponds directement.
+
+
+
+
+==================================================
+QUESTION CLIENT
 ==================================================
 
 {message}
 
 ==================================================
-📤 REPONSE
+REPONSE
 ==================================================
 """
+
+    try:
 
         response = gemini_model.generate_content(prompt)
 
         if response and response.text:
 
-            html = markdown.markdown(
+            return markdown.markdown(
                 response.text.strip()
             )
 
-            return html
-
-        return "Je ne peux pas répondre pour le moment."
-
     except Exception as e:
 
-        logging.error(f"GEMINI FALLBACK ERROR: {e}")
+        logging.error(
+            f"LLM FALLBACK ERROR: {e}"
+        )
 
-        return """
+    return """
 <p>
-Merci pour votre message 😊<br><br>
-Notre assistant est momentanément indisponible.
-Veuillez réessayer dans quelques instants.
+Notre assistant est momentanément indisponible 😊
 </p>
 """
-
 
 # ==========================================================
 # OPERATIONS
 # ==========================================================
-def gerer_operations(message, id_user):
+def gerer_operations(
+    message,
+    id_user
+):
 
     op = detecter_operation(message)
 
-    if op == "suivi_colis":
+    if not op:
+        return None
 
-        info = get_colis_info(message, id_user)
-
-        return {
-            "type": "tracking",
-            "reponse": "Colis trouvé" if info else "Introuvable",
-            "data": info,
-            "trouve": bool(info)
-        }
-
+    # ======================================================
+    # CONVERSION
+    # ======================================================
     if op == "conversion":
 
         result = convertir_operation(message)
 
+        # ----------------------------------------------
+        # PAS ASSEZ D'INFOS
+        # ----------------------------------------------
+        if not result:
+
+            msg = """
+💱 Veuillez entrer le montant
+ainsi que les devises.
+
+Exemple :
+100 USD en EUR
+"""
+
+            return {
+                "type": "conversion",
+                "reponse": formatter_operation_avec_llm(
+                    "conversion",
+                    msg
+                ),
+                "trouve": False
+            }
+
+        # ----------------------------------------------
+        # RESULTAT CONVERSION
+        # ----------------------------------------------
+        msg = f"""
+💱 {result['montant']} {result['source']}
+=
+{result['resultat']} {result['cible']}
+"""
+
         return {
             "type": "conversion",
-            "reponse": "Conversion OK" if result else "Erreur",
-            "trouve": bool(result)
+            "reponse": formatter_operation_avec_llm(
+                "conversion",
+                msg
+            ),
+            "trouve": True
         }
 
+    # ======================================================
+    # TRACKING
+    # ======================================================
+    if op == "suivi_colis":
+
+        code = est_code_colis(message)
+
+        # ----------------------------------------------
+        # PAS DE CODE
+        # ----------------------------------------------
+        if not code:
+
+            msg = """
+📦 Veuillez envoyer votre code de suivi.
+
+Exemple :
+CTX10001
+"""
+
+            return {
+                "type": "tracking",
+                "reponse": formatter_operation_avec_llm(
+                    "tracking",
+                    msg
+                ),
+                "trouve": False
+            }
+
+        # ----------------------------------------------
+        # RECHERCHE COLIS
+        # ----------------------------------------------
+        result = get_colis_info(
+            code,
+            id_user
+        )
+
+        # ----------------------------------------------
+        # COLIS INTROUVABLE
+        # ----------------------------------------------
+        if not result:
+
+            msg = f"""
+❌ Aucun colis trouvé
+pour le code {code}
+"""
+
+            return {
+                "type": "tracking",
+                "reponse": formatter_operation_avec_llm(
+                    "tracking",
+                    msg
+                ),
+                "trouve": False
+            }
+
+        # ----------------------------------------------
+        # COLIS TROUVÉ
+        # ----------------------------------------------
+        msg = f"""
+📦 Colis {result['code']}
+
+Statut :
+{result['statut']}
+"""
+
+        return {
+            "type": "tracking",
+            "reponse": formatter_operation_avec_llm(
+                "tracking",
+                msg
+            ),
+            "data": result,
+            "trouve": True
+        }
+
+    # ======================================================
+    # CONTACT AGENT
+    # ======================================================
     if op == "contact_agent":
 
-        agent = get_agent()
+        msg = """
+👨‍💼 Merci de choisir
+un moyen de contact disponible.
+"""
 
         return {
             "type": "agent",
-            "reponse": "Agent disponible" if agent else "Aucun agent",
-            "agent": agent,
-            "trouve": bool(agent)
+            "reponse": formatter_operation_avec_llm(
+                "agent",
+                msg
+            ),
+            "agent": get_agent(),
+            "trouve": True
         }
 
+    # ======================================================
+    # SERVICES
+    # ======================================================
     if op == "service_info":
 
-        services = get_services()
+        msg = """
+📌 Voici les services
+disponibles chez CTEXI.
+"""
 
         return {
             "type": "service",
-            "reponse": "Services disponibles",
-            "services": services,
+            "reponse": formatter_operation_avec_llm(
+                "service",
+                msg
+            ),
+            "services": get_services(),
             "trouve": True
         }
 
     return None
 
-
 # ==========================================================
-# MAIN ENGINE FINAL
+# MAIN ENGINE
 # ==========================================================
 def trouver_meilleure_correspondance(
     message,
@@ -588,34 +800,44 @@ def trouver_meilleure_correspondance(
 
     message = nettoyer_message(message)
 
-    # ======================================================
-    # MEMOIRE CONVERSATIONNELLE
-    # ======================================================
     history = get_conversation_history(id_user)
 
     # ======================================================
-    # OPERATIONS
+    # 1. OPERATIONS
     # ======================================================
-    op = gerer_operations(message, id_user)
+    op = gerer_operations(
+        message,
+        id_user
+    )
 
     if op:
 
-        sauvegarder_conversation(
-            id_user=id_user,
-            message_user=message_original,
-            reponse_bot=op["reponse"]
+        logging.info(
+            "[DEBUG] SOURCE = OPERATION"
         )
+
+        sauvegarder_conversation(
+            id_user,
+            message_original,
+            op["reponse"]
+        )
+
+        op["debug"] = {
+            "source": "operation",
+            "llm_used": True
+        }
 
         return op
 
     # ======================================================
-    # INTENT DETECTION
+    # 2. INTENT MATCHING
     # ======================================================
     intent_id, sous_intent, score = detecter_intention(message)
 
-    # ======================================================
-    # SI MATCH TROUVE
-    # ======================================================
+    logging.info(
+        f"[DEBUG] INTENT SCORE = {score}"
+    )
+
     if score >= SEUIL_INTENT:
 
         reponse_brute = get_reponse_intention(
@@ -625,47 +847,63 @@ def trouver_meilleure_correspondance(
 
         if reponse_brute:
 
+            logging.info(
+                "[DEBUG] SOURCE = DATABASE"
+            )
+
             reponse_finale = reformuler_avec_gemini(
-                message_user=message,
-                reponse_brute=reponse_brute,
-                history=history
+                message,
+                reponse_brute,
+                history
             )
 
             sauvegarder_conversation(
-                id_user=id_user,
-                message_user=message_original,
-                reponse_bot=reponse_finale,
-                id_intent=intent_id,
-                confidence=score
+                id_user,
+                message_original,
+                reponse_finale,
+                intent_id,
+                float(score)
             )
 
             return {
                 "type": "intent",
-                "intent_id": intent_id,
-                "sous_intent": sous_intent,
                 "reponse": reponse_finale,
-                "trouve": True,
-                "confidence": float(score)
+                "confidence": float(score),
+
+                "debug": {
+                    "source": "database + reformulation",
+                    "llm_used": True,
+                    "intent_match": True
+                }
             }
 
     # ======================================================
-    # FALLBACK GEMINI
+    # 3. LLM FALLBACK
     # ======================================================
+    logging.info(
+        "[DEBUG] SOURCE = LLM FALLBACK"
+    )
+
     reponse_llm = gemini_direct_answer(
         message,
         history
     )
 
     sauvegarder_conversation(
-        id_user=id_user,
-        message_user=message_original,
-        reponse_bot=reponse_llm,
-        confidence=score
+        id_user,
+        message_original,
+        reponse_llm,
+        confidence=float(score)
     )
 
     return {
-        "type": "llm_fallback",
+        "type": "llm",
         "reponse": reponse_llm,
-        "trouve": True,
-        "confidence": float(score)
+        "confidence": float(score),
+
+        "debug": {
+            "source": "llm_only",
+            "llm_used": True,
+            "intent_match": False
+        }
     }
