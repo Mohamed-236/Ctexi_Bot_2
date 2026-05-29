@@ -10,13 +10,13 @@ def nettoyer_message(message: str) -> str:
         if unicodedata.category(c) != 'Mn'
     )
 
-    # 🔥 garder lettres + chiffres + espaces
+    # garder lettres + chiffres + espaces
     message = re.sub(r"[^a-z0-9\s]", " ", message)
 
     # espaces multiples
     message = re.sub(r"\s+", " ", message).strip()
 
-    # 🔥 repetition seulement sur lettres (PAS chiffres)
+    # repetition seulement sur lettres (PAS chiffres)
     message = re.sub(r"([a-z])\1{2,}", r"\1", message)
 
     return message
