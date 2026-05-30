@@ -59,17 +59,29 @@ CREATE TABLE auth.agents(
 
 
 -- Sauvegarde des conversations
-CREATE TABLE chatbot.conversations (
+CREATE TABLE chatbot.conversations(
     id_conv SERIAL PRIMARY KEY,
     id_user INTEGER NOT NULL REFERENCES auth.users(id_user) ON DELETE CASCADE,
-    id_intent INT REFERENCES chatbot.intention(id_intent),
-    id_operation INT REFERENCES chatbot.operation(id_operation),
+    id_intent INT REFERENCES chatbot.intention(id_intent) ON DELETE CASCADE,
+
+    
     message_user TEXT NOT NULL,
     reponse_bot TEXT,
+
+
+    type_intent VARCHAR(50),  -- 'information' | 'operation'
+    action_handler VARCHAR(100), -- ex: conversion_handler, agent_handler
+
     confidence FLOAT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
+SELECT * FROM chatbot.conversations;
+
+
+
+DROP TABLE chatbot.conversations CASCADE;
 
 
 
@@ -433,310 +445,6 @@ SELECT * FROM chatbot.intent_responses;
 -- INTENT EXAMPLES
 -- ==========================================================
 
-INSERT INTO chatbot.intent_examples
-(id_intent, sous_intent, phrase, mots_cles)
-
-VALUES
-
-
-(5, 'fonctionnement',
-'comment fonctionne votre service ctexi buy',
-ARRAY['fonctionnement', 'service', 'buy']),
-
-(5, 'achat',
-'comment acheter un produit en chine',
-ARRAY['acheter', 'chine', 'produit']),
-
-(5, 'achat',
-'je veux acheter en chine',
-ARRAY['acheter', 'chine']),
-
-(5, 'achat',
-'vous pouvez acheter pour moi',
-ARRAY['acheter', 'commande']),
-
-(5, 'commande',
-'comment passer une commande',
-ARRAY['commande', 'passer commande']),
-
-(5, 'commande',
-'quelles sont les étapes d’achat',
-ARRAY['etapes', 'achat', 'commande']),
-
-(5, 'paiement',
-'comment payer une commande',
-ARRAY['payer', 'paiement', 'commande']),
-
-(5, 'fiabilite',
-'est ce fiable d’acheter avec vous',
-ARRAY['fiable', 'sécurité', 'confiance']),
-
-(5, 'livraison',
-'comment se fait la livraison',
-ARRAY['livraison', 'expédition']),
-
-(5, 'annulation',
-'puis je annuler ma commande',
-ARRAY['annuler', 'commande']),
-
-
-
-(6, 'visa',
-'comment obtenir un visa pour la chine',
-ARRAY['visa', 'chine']),
-
-(6, 'voyage',
-'je veux voyager en chine',
-ARRAY['voyage', 'chine']),
-
-(6, 'documents',
-'quels documents pour visa chine',
-ARRAY['documents', 'visa']),
-
-(6, 'delai',
-'delai visa chine',
-ARRAY['délai', 'visa']),
-
-(6, 'billet',
-'reservation billet avion chine',
-ARRAY['billet', 'avion']),
-
-(6, 'hotel',
-'reservation hotel chine',
-ARRAY['hotel', 'reservation']),
-
-(6, 'aeroport',
-'assistance aeroport chine',
-ARRAY['aéroport', 'assistance']),
-
-(6, 'modification',
-'modifier reservation voyage',
-ARRAY['modifier', 'reservation']),
-
-
-
-(7, 'formations',
-'quelles formations proposez vous',
-ARRAY['formations', 'cours']),
-
-(7, 'inscription',
-'je veux me former chez vous',
-ARRAY['formation', 'inscription']),
-
-(7, 'inscription',
-'comment sinscrire a une formation',
-ARRAY['inscription', 'formation']),
-
-(7, 'mode',
-'formation en ligne ou presentiel',
-ARRAY['ligne', 'présentiel']),
-
-(7, 'certificat',
-'certificat formation',
-ARRAY['certificat']),
-
-(7, 'accompagnement',
-'accompagnement apres formation',
-ARRAY['accompagnement', 'suivi']),
-
-(7, 'prix',
-'prix formation',
-ARRAY['prix', 'coût']),
-
-(7, 'duree',
-'duree formation',
-ARRAY['durée', 'temps']),
-
-
-
-(8, 'expedition',
-'expedier colis chine burkina',
-ARRAY['expédier', 'colis']),
-
-(8, 'expedition',
-'envoyer marchandise chine burkina',
-ARRAY['marchandise', 'transport']),
-
-(8, 'fonctionnement',
-'transport chine burkina comment ca marche',
-ARRAY['transport', 'fonctionnement']),
-
-(8, 'delai',
-'delai livraison chine burkina',
-ARRAY['délai', 'livraison']),
-
-(8, 'prix',
-'prix transport chine burkina',
-ARRAY['prix', 'transport']),
-
-(8, 'interdiction',
-'produits interdits transport',
-ARRAY['interdits', 'transport']),
-
-(8, 'douane',
-'frais de douane colis',
-ARRAY['douane', 'frais']),
-
-(8, 'retard',
-'colis en retard',
-ARRAY['retard', 'colis']),
-
-(8, 'tracking',
-'mon colis est en transit',
-ARRAY['transit', 'tracking']),
-
-(8, 'tracking',
-'code colis invalide',
-ARRAY['code colis', 'invalide']),
-
-
-(12, 'delai',
-'combien de temps prend un transfert',
-ARRAY['délai', 'transfert']),
-
-(12, 'conversion',
-'convertir yuan en fcfa',
-ARRAY['conversion', 'yuan', 'fcfa']),
-
-(12, 'paiement',
-'comment payer fournisseur chine',
-ARRAY['payer', 'fournisseur']),
-
-(12, 'paiement',
-'faire une demande de paiement',
-ARRAY['paiement', 'demande']),
-
-(12, 'securite',
-'paiement securise',
-ARRAY['sécurité', 'paiement']),
-
-(12, 'preuve',
-'preuve de paiement',
-ARRAY['preuve', 'paiement']);
-
-
-
-
-INSERT INTO chatbot.intent_responses
-(id_intent, sous_intent, reponse)
-
-VALUES
-
-
-(5, 'fonctionnement',
-'CTEXI Buy vous accompagne depuis la recherche du fournisseur jusqu’à la livraison finale de votre produit au Burkina Faso.'),
-
-(5, 'achat',
-'Vous pouvez nous envoyer le lien ou la photo du produit que vous souhaitez acheter en Chine afin que nous recherchions un fournisseur fiable.'),
-
-(5, 'commande',
-'Pour passer une commande, il suffit de nous transmettre les détails du produit souhaité et notre équipe vous accompagnera.'),
-
-(5, 'paiement',
-'Le paiement peut être effectué via Mobile Money, virement bancaire ou autres solutions sécurisées.'),
-
-(5, 'fiabilite',
-'Nous travaillons avec des fournisseurs vérifiés afin de sécuriser vos achats et réduire les risques.'),
-
-(5, 'livraison',
-'La livraison est organisée après validation du produit avec plusieurs options selon votre budget et vos délais.'),
-
-(5, 'annulation',
-'Une commande peut être annulée tant que l’achat n’a pas encore été validé auprès du fournisseur.'),
-
-
-
-(6, 'visa',
-'Nous vous accompagnons dans les démarches d’obtention de visa pour la Chine.'),
-
-(6, 'voyage',
-'Nous pouvons organiser votre voyage vers la Chine avec assistance complète.'),
-
-(6, 'documents',
-'Les documents nécessaires dépendent du type de visa demandé.'),
-
-(6, 'delai',
-'Le délai de traitement du visa varie selon la période et le type de demande.'),
-
-(6, 'billet',
-'Nous pouvons vous aider à réserver votre billet d’avion vers la Chine.'),
-
-(6, 'hotel',
-'Nous proposons également une assistance pour la réservation d’hôtel.'),
-
-(6, 'aeroport',
-'Une assistance à l’aéroport peut être organisée selon vos besoins.'),
-
-(6, 'modification',
-'Nous pouvons vous accompagner pour modifier certaines réservations de voyage.'),
-
-
-
-(7, 'formations',
-'CTEXI Académie propose des formations pratiques en import-export, entrepreneuriat et marketing digital.'),
-
-(7, 'inscription',
-'Vous pouvez vous inscrire à nos formations en ligne ou en présentiel.'),
-
-(7, 'mode',
-'Nos formations sont disponibles en ligne et en présentiel selon votre disponibilité.'),
-
-(7, 'certificat',
-'Un certificat peut être délivré à la fin de certaines formations.'),
-
-(7, 'accompagnement',
-'Nous proposons un accompagnement après formation afin de vous aider à appliquer les compétences acquises.'),
-
-(7, 'prix',
-'Le coût des formations varie selon le programme choisi.'),
-
-(7, 'duree',
-'La durée dépend du type de formation et du programme sélectionné.'),
-
-
-
-(8, 'expedition',
-'Nous assurons l’expédition de colis et marchandises depuis la Chine vers le Burkina Faso.'),
-
-(8, 'fonctionnement',
-'Le transport se fait par avion ou bateau selon votre budget et l’urgence de la livraison.'),
-
-(8, 'delai',
-'Les délais de livraison varient généralement entre 7 et 45 jours.'),
-
-(8, 'prix',
-'Le coût du transport dépend du poids, du volume et du mode d’expédition choisi.'),
-
-(8, 'interdiction',
-'Certains produits sont interdits au transport selon les réglementations douanières.'),
-
-(8, 'douane',
-'Des frais de douane peuvent être appliqués selon la nature de la marchandise.'),
-
-(8, 'retard',
-'En cas de retard, notre équipe peut vérifier le statut de votre colis.'),
-
-(8, 'tracking',
-'Merci de vérifier votre code colis ou de contacter notre équipe pour assistance.'),
-
-
-(12, 'delai',
-'Les délais de transfert varient selon le mode de paiement utilisé.'),
-
-(12, 'conversion',
-'Nous pouvons convertir différentes devises comme le yuan et le FCFA.'),
-
-(12, 'paiement',
-'Nous facilitons les paiements vers les fournisseurs chinois de manière sécurisée.'),
-
-(12, 'securite',
-'Les paiements sont sécurisés afin de limiter les risques de fraude.'),
-
-(12, 'preuve',
-'Une preuve de paiement est fournie après chaque transaction.');
-
-
-
 
 
 
@@ -897,8 +605,7 @@ INSERT INTO chatbot.intent_examples (id_intent, sous_intent, phrase, mots_cles) 
 (9, 'presentation', 'Tell me about CTEXI', ARRAY['tell','about','ctexi']),
 (9, 'presentation', 'What is CTEXI ?', ARRAY['what','is','ctexi']),
 (9, 'presentation', 'CTEXI est une entreprise de quoi ?', ARRAY['ctexi','entreprise']),
--- localisation
-(9, 'localisation', 'Où êtes-vous situés ?', ARRAY['où','situé']),
+ (9, 'localisation', 'Où êtes-vous situés ?', ARRAY['où','situé']),
 (9, 'localisation', 'Vous êtes basés où ?', ARRAY['basé','où']),
 (9, 'localisation', 'Quelle est votre adresse ?', ARRAY['adresse']),
 (9, 'localisation', 'Vous opérez dans quels pays ?', ARRAY['pays','opérez']),

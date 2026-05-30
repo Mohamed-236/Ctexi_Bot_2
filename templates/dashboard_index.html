@@ -2,101 +2,712 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Admin | Ctexi-Bot</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0c10; --bg2: #0f1117; --bg3: #161b24; --bg4: #1c2333;
+      --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+      --text1: #f0f4f8; --text2: #8b96a8; --text3: #566070;
+      --accent: #3b82f6; --accent2: #1d4ed8;
+      --green: #10b981; --amber: #f59e0b; --red: #ef4444;
+      --purple: #8b5cf6; --teal: #14b8a6; --pink: #ec4899;
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text1); }
+    #app { display: flex; height: 100vh; overflow: hidden; }
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    /* SIDEBAR */
+    .sidebar { width: 220px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; }
+    .logo-area { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .logo-title { font-size: 17px; font-weight: 600; color: var(--text1); letter-spacing: -0.3px; }
+    .logo-sub { font-size: 11px; color: var(--text3); margin-top: 2px; letter-spacing: 1px; text-transform: uppercase; }
+    .logo-dot { display: inline-block; width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-right: 6px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .nav-section { padding: 0 12px; flex: 1; }
+    .nav-label { font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; padding: 0 8px; margin: 12px 0 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; font-size: 13.5px; color: var(--text2); cursor: pointer; transition: all 0.15s; margin-bottom: 2px; }
+    .nav-item:hover { background: var(--bg3); color: var(--text1); }
+    .nav-item.active { background: rgba(59,130,246,0.12); color: var(--accent); font-weight: 500; }
+    .nav-item i { font-size: 16px; width: 18px; }
+    .nav-badge { margin-left: auto; background: var(--accent2); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 20px; font-weight: 500; }
+    .sidebar-footer { padding: 16px 12px 0; border-top: 1px solid var(--border); }
+    .user-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+    .user-card:hover { background: var(--bg3); }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--purple)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 13px; font-weight: 500; color: var(--text1); }
+    .user-role { font-size: 11px; color: var(--text3); }
 
-  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    /* MAIN */
+    .main { flex: 1; overflow-y: auto; background: var(--bg); }
+    .topbar { position: sticky; top: 0; z-index: 10; background: rgba(10,12,16,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; gap: 16px; }
+    .page-title { font-size: 16px; font-weight: 500; color: var(--text1); }
+    .page-tag { font-size: 11.5px; color: var(--text3); margin-left: 2px; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .time-badge { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text3); background: var(--bg3); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); }
+    .btn-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); font-size: 16px; transition: all 0.15s; }
+    .btn-icon:hover { border-color: var(--border2); color: var(--text1); }
+
+    /* PAGES */
+    .page { padding: 24px 28px; display: none; }
+    .page.active { display: block; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .section-title { font-size: 14px; font-weight: 500; color: var(--text2); }
+    .btn { font-family: 'DM Sans', sans-serif; font-size: 12.5px; padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text1); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn:hover { background: var(--bg4); border-color: rgba(255,255,255,0.2); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+    /* KPI */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .kpi-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; transition: border-color 0.2s; position: relative; overflow: hidden; }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 12px 12px 0 0; }
+    .kpi-card.blue::before { background: var(--accent); }
+    .kpi-card.green::before { background: var(--green); }
+    .kpi-card.amber::before { background: var(--amber); }
+    .kpi-card.red::before { background: var(--red); }
+    .kpi-card:hover { border-color: var(--border2); }
+    .kpi-label { font-size: 11.5px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+    .kpi-value { font-size: 28px; font-weight: 600; color: var(--text1); letter-spacing: -1px; line-height: 1; margin-bottom: 8px; }
+    .kpi-delta { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+    .kpi-delta.up { color: var(--green); } .kpi-delta.down { color: var(--red); } .kpi-delta.neu { color: var(--text3); }
+
+    /* CHARTS */
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 24px; }
+    .chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .chart-title { font-size: 13px; font-weight: 500; color: var(--text1); margin-bottom: 4px; }
+    .chart-sub { font-size: 11.5px; color: var(--text3); margin-bottom: 16px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text2); }
+    .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+    /* TABLE */
+    .data-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+    .data-card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th { padding: 10px 20px; text-align: left; font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.7px; background: var(--bg3); border-bottom: 1px solid var(--border); }
+    .data-table td { padding: 13px 20px; border-bottom: 1px solid var(--border); color: var(--text1); vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+    .badge-green { background: rgba(16,185,129,0.12); color: var(--green); }
+    .badge-amber { background: rgba(245,158,11,0.12); color: var(--amber); }
+    .badge-red { background: rgba(239,68,68,0.12); color: var(--red); }
+    .badge-blue { background: rgba(59,130,246,0.12); color: var(--accent); }
+    .badge-purple { background: rgba(139,92,246,0.12); color: var(--purple); }
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text3); }
+
+    /* CONF BAR */
+    .conf-bar { width: 80px; height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
+    .conf-fill { height: 100%; border-radius: 2px; }
+
+    /* USERS GRID */
+    .users-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+    .user-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; align-items: center; gap: 12px; transition: border-color 0.15s; }
+    .user-item:hover { border-color: var(--border2); }
+    .user-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; flex-shrink: 0; }
+    .user-info { flex: 1; min-width: 0; }
+    .user-uname { font-size: 13.5px; font-weight: 500; color: var(--text1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-email { font-size: 11.5px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-meta { margin-top: 6px; display: flex; gap: 6px; }
+
+    /* BOTTOM GRID */
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .stat-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--text2); } .stat-val { font-weight: 500; color: var(--text1); }
+    .progress-row { margin-bottom: 14px; }
+    .progress-info { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
+    .progress-name { color: var(--text2); } .progress-pct { color: var(--text1); font-weight: 500; }
+    .progress-track { height: 5px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 3px; }
+
+    /* SEARCH */
+    .search-bar { display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 13px; color: var(--text2); width: 220px; }
+    .search-bar i { color: var(--text3); font-size: 15px; }
+    .search-bar input { background: none; border: none; outline: none; color: var(--text1); font-size: 13px; font-family: 'DM Sans', sans-serif; width: 100%; }
+    .search-bar input::placeholder { color: var(--text3); }
+
+    /* SCROLLBAR */
+    .main::-webkit-scrollbar { width: 6px; }
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .main::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+
+    /* LOGOUT FORM */
+    .logout-form { margin: 0; }
+  </style>
 </head>
-
 <body>
 
-<div class="dashboard">
-
-  <!-- ================= SIDEBAR ================= -->
+<div id="app">
   <aside class="sidebar">
-
-   <div class="logo">
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo-img">
-    <div>
-        <h2>Ctexi-Bot</h2>
-        <p>Admin Panel</p>
+    <div class="logo-area">
+      <div class="logo-title"><span class="logo-dot"></span>Ctexi-Bot</div>
+      <div class="logo-sub">Admin Panel</div>
     </div>
-   </div>
-
-    <nav class="menu">
-      <a class="active" href="/api/dashboard/dashboard_index">📊 Dashboard</a>
-      <a href="/api/dashboard/conversations">💬 Conversations</a>
-      <a href="/api/dashboard/faq">📚 FAQ</a>
-      <a href="/api/dashboard/operations">⚙️ Opérations</a>
-      <a href="/api/dashboard/users">👤 Users</a>
-    </nav>
-
-    <form method="POST" action="/api/auth/logout">
-      <button class="logout">Déconnexion</button>
-    </form>
-
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item active" onclick="navigate('dashboard', this)">
+        <i class="ti ti-chart-bar"></i> Dashboard
+      </div>
+      <div class="nav-item" onclick="navigate('conversations', this)">
+        <i class="ti ti-messages"></i> Conversations
+        <span class="nav-badge" id="convBadge">—</span>
+      </div>
+      <div class="nav-label">Gestion</div>
+      <div class="nav-item" onclick="navigate('intentions', this)">
+        <i class="ti ti-brain"></i> Intentions
+      </div>
+      <div class="nav-item" onclick="navigate('users', this)">
+        <i class="ti ti-users"></i> Utilisateurs
+      </div>
+      <div class="nav-item" onclick="navigate('agents', this)">
+        <i class="ti ti-headset"></i> Agents
+      </div>
+      <div class="nav-label">Data</div>
+      <div class="nav-item" onclick="navigate('colis', this)">
+        <i class="ti ti-package"></i> Colis
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="avatar">{{ user_initials }}</div>
+        <div>
+          <div class="user-name">{{ user_name }}</div>
+          <div class="user-role">Super Admin</div>
+        </div>
+      </div>
+      <form class="logout-form" method="POST" action="/api/auth/logout" style="padding: 8px 12px 0;">
+        <button type="submit" class="btn" style="width:100%;justify-content:center;color:var(--red);border-color:rgba(239,68,68,0.3)">
+          <i class="ti ti-logout" style="font-size:14px"></i> Déconnexion
+        </button>
+      </form>
+    </div>
   </aside>
 
-  <!-- ================= MAIN ================= -->
   <main class="main">
+    <div class="topbar">
+      <span class="page-title" id="pageTitle">Analytics</span>
+      <span class="page-tag" id="pageTag">— Vue d'ensemble</span>
+      <div class="topbar-right">
+        <div class="time-badge" id="timeBadge">--:--</div>
+        <div class="btn-icon"><i class="ti ti-bell"></i></div>
+        <div class="btn-icon"><i class="ti ti-settings"></i></div>
+      </div>
+    </div>
 
-    <header class="topbar">
-      <h1>Dashboard Analytics</h1>
-      <div class="user">👋 {{ user_name }}</div>
-    </header>
-
-    <!-- ================= KPI ================= -->
-    <section class="cards">
-
-      <div class="card">
-        <h3>Utilisateurs</h3>
-        <p id="usersCount">120</p>
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi-card blue">
+          <div class="kpi-label">Utilisateurs</div>
+          <div class="kpi-value" id="kpi-users">—</div>
+          <div class="kpi-delta up" id="kpi-users-delta"></div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Conversations</div>
+          <div class="kpi-value" id="kpi-convs">—</div>
+          <div class="kpi-delta up" id="kpi-convs-delta"></div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">FAQ Match</div>
+          <div class="kpi-value" id="kpi-faq">—</div>
+          <div class="kpi-delta" id="kpi-faq-delta"></div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-label">Fallback rate</div>
+          <div class="kpi-value" id="kpi-fallback">—</div>
+          <div class="kpi-delta neu">Suivi en temps réel</div>
+        </div>
       </div>
 
-      <div class="card">
-        <h3>Conversations</h3>
-        <p id="convCount">450</p>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Activité — 7 derniers jours</div>
+          <div class="chart-sub">Conversations et nouveaux utilisateurs</div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Conversations</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>Nouveaux users</div>
+          </div>
+          <div style="position:relative;height:200px">
+            <canvas id="activityChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Répartition des intents</div>
+          <div class="chart-sub">Par type d'intention</div>
+          <div style="position:relative;height:180px;margin-bottom:12px">
+            <canvas id="intentDonut"></canvas>
+          </div>
+          <div class="legend" id="intentLegend" style="flex-wrap:wrap;gap:8px"></div>
+        </div>
       </div>
 
-      <div class="card">
-        <h3>FAQ Match</h3>
-        <p id="faqCount">92%</p>
+      <div class="bottom-grid">
+        <div class="chart-card">
+          <div class="chart-title" style="margin-bottom:16px">Top intentions actives</div>
+          <div id="intentBars"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title" style="margin-bottom:16px">Statistiques globales</div>
+          <div id="globalStats"></div>
+        </div>
       </div>
+    </div>
 
-      <div class="card">
-        <h3>Fallback</h3>
-        <p id="fallbackCount">8%</p>
+    <!-- CONVERSATIONS -->
+    <div class="page" id="page-conversations">
+      <div class="section-header">
+        <div class="section-title">Historique des conversations</div>
+        <div style="display:flex;gap:8px">
+          <div class="search-bar"><i class="ti ti-search"></i><input type="text" placeholder="Rechercher..." id="convSearch" oninput="filterConvs()"></div>
+          <button class="btn"><i class="ti ti-filter" style="font-size:14px"></i> Filtrer</button>
+          <button class="btn btn-primary" onclick="exportCSV()"><i class="ti ti-download" style="font-size:14px"></i> Export CSV</button>
+        </div>
       </div>
-
-    </section>
-
-    <!-- ================= GRAPHS ================= -->
-    <section class="charts">
-
-      <div class="chart-box">
-        <h3>Utilisateurs (7 jours)</h3>
-        <canvas id="usersChart"></canvas>
+      <div class="data-card">
+        <div class="data-card-header">
+          <span style="font-size:13px;font-weight:500;color:var(--text1)">Conversations <span style="color:var(--text3);font-weight:400">— ce mois</span></span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#ID</th><th>Utilisateur</th><th>Message</th>
+              <th>Intent</th><th>Type</th><th>Confiance</th><th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="convTable"></tbody>
+        </table>
       </div>
+    </div>
 
-      <div class="chart-box">
-        <h3>Conversations</h3>
-        <canvas id="convChart"></canvas>
+    <!-- INTENTIONS -->
+    <div class="page" id="page-intentions">
+      <div class="section-header">
+        <div class="section-title">Gestion des intentions</div>
+        <button class="btn btn-primary"><i class="ti ti-plus" style="font-size:14px"></i> Nouvelle intention</button>
       </div>
-
-      <div class="chart-box">
-        <h3>Répartition intents</h3>
-        <canvas id="intentChart"></canvas>
+      <div class="data-card">
+        <div class="data-card-header">
+          <span style="font-size:13px;font-weight:500;color:var(--text1)" id="intentCount">— intentions configurées</span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Nom</th><th>Type</th><th>Handler</th><th>Exemples</th><th>Réponses</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="intentTable"></tbody>
+        </table>
       </div>
+    </div>
 
-    </section>
+    <!-- USERS -->
+    <div class="page" id="page-users">
+      <div class="section-header">
+        <div class="section-title">Gestion des utilisateurs</div>
+        <div style="display:flex;gap:8px">
+          <div class="search-bar"><i class="ti ti-search"></i><input type="text" placeholder="Rechercher un user..."></div>
+          <button class="btn btn-primary"><i class="ti ti-user-plus" style="font-size:14px"></i> Ajouter</button>
+        </div>
+      </div>
+      <div class="users-grid" id="usersGrid"></div>
+    </div>
+
+    <!-- AGENTS -->
+    <div class="page" id="page-agents">
+      <div class="section-header">
+        <div class="section-title">Agents disponibles</div>
+        <button class="btn btn-primary"><i class="ti ti-plus" style="font-size:14px"></i> Ajouter un agent</button>
+      </div>
+      <div class="data-card">
+        <div class="data-card-header">
+          <span style="font-size:13px;font-weight:500;color:var(--text1)" id="agentCount">— agents</span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Agent</th><th>Email</th><th>WhatsApp</th><th>Téléphone</th><th>Intent liée</th><th>Statut</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="agentsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COLIS -->
+    <div class="page" id="page-colis">
+      <div class="section-header">
+        <div class="section-title">Suivi des colis</div>
+        <div class="search-bar" style="width:280px"><i class="ti ti-search"></i><input type="text" placeholder="Rechercher un code colis..."></div>
+      </div>
+      <div class="kpi-grid" id="colisKpi"></div>
+      <div class="data-card">
+        <div class="data-card-header"><span style="font-size:13px;font-weight:500;color:var(--text1)" id="colisCount">— colis trackés</span></div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Code colis</th><th>Utilisateur</th><th>Type</th><th>Mode</th><th>Statut</th><th>Dernière MAJ</th></tr>
+          </thead>
+          <tbody id="colisTable"></tbody>
+        </table>
+      </div>
+    </div>
 
   </main>
-
 </div>
 
-<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+  // ============================================================
+  //  NAVIGATION
+  // ============================================================
+  const pageTitles = {
+    dashboard:     ['Analytics',      '— Vue d\'ensemble'],
+    conversations: ['Conversations',  '— Historique complet'],
+    intentions:    ['Intentions',     '— Gestion NLP'],
+    users:         ['Utilisateurs',   '— Comptes clients'],
+    agents:        ['Agents',         '— Support humain'],
+    colis:         ['Colis',          '— Suivi & tracking'],
+  };
 
+  function navigate(page, el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('page-' + page).classList.add('active');
+    document.getElementById('pageTitle').textContent = pageTitles[page][0];
+    document.getElementById('pageTag').textContent   = pageTitles[page][1];
+  }
+
+  // ============================================================
+  //  HORLOGE
+  // ============================================================
+  function tick() {
+    document.getElementById('timeBadge').textContent =
+      new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  tick(); setInterval(tick, 1000);
+
+  // ============================================================
+  //  COULEURS
+  // ============================================================
+  const COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#14b8a6','#ec4899','#f97316'];
+  const AVG_COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#14b8a6'];
+
+  // ============================================================
+  //  API CALLS — pointe vers tes routes Flask
+  // ============================================================
+  const API = {
+    stats:     '/api/dashboard/stats',
+    convs:     '/api/dashboard/conversations',
+    intents:   '/api/dashboard/intentions',
+    users:     '/api/dashboard/users',
+    agents:    '/api/dashboard/agents',
+    colis:     '/api/dashboard/colis',
+    activity:  '/api/dashboard/activity',    // { labels:[], convs:[], users:[] }
+    intentDist:'/api/dashboard/intent_dist', // [{ nom, count }]
+  };
+
+  async function fetchJSON(url) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(r.status);
+      return await r.json();
+    } catch (e) {
+      console.warn('API non disponible (' + url + '), données mock utilisées');
+      return null;
+    }
+  }
+
+  // ============================================================
+  //  DASHBOARD KPI
+  // ============================================================
+  async function loadStats() {
+    const d = await fetchJSON(API.stats) || {
+      total_users: 248, total_convs: 1847,
+      faq_rate: 89, fallback_rate: 11,
+      agents_actifs: 7, agents_total: 9,
+      confiance_moy: 82.4, intents_count: 14, colis_count: 312, uptime: 99.7
+    };
+
+    document.getElementById('kpi-users').textContent    = d.total_users.toLocaleString('fr');
+    document.getElementById('kpi-convs').textContent    = d.total_convs.toLocaleString('fr');
+    document.getElementById('kpi-faq').textContent      = d.faq_rate + '%';
+    document.getElementById('kpi-fallback').textContent = d.fallback_rate + '%';
+
+    document.getElementById('globalStats').innerHTML = [
+      ['Agents actifs',       d.agents_actifs + ' / ' + d.agents_total],
+      ['Confiance moyenne',   d.confiance_moy.toFixed(1) + '%'],
+      ['Temps moy. réponse',  '1.2s'],
+      ['Intents configurés',  d.intents_count],
+      ['Colis trackés',       d.colis_count],
+      ['Uptime',              '<span style="color:var(--green)">' + d.uptime + '%</span>'],
+    ].map(([l, v]) =>
+      `<div class="stat-row"><span class="stat-label">${l}</span><span class="stat-val">${v}</span></div>`
+    ).join('');
+  }
+
+  // ============================================================
+  //  GRAPHIQUE ACTIVITÉ
+  // ============================================================
+  let activityChartInst = null;
+  async function loadActivity() {
+    const d = await fetchJSON(API.activity) || {
+      labels: ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'],
+      convs:  [42, 65, 58, 80, 112, 95, 134],
+      users:  [4, 8, 6, 12, 18, 10, 22]
+    };
+
+    if (activityChartInst) activityChartInst.destroy();
+    activityChartInst = new Chart(document.getElementById('activityChart'), {
+      type: 'bar',
+      data: {
+        labels: d.labels,
+        datasets: [
+          { label: 'Conversations', data: d.convs, backgroundColor: 'rgba(59,130,246,0.25)', borderColor: '#3b82f6', borderWidth: 2, borderRadius: 4, yAxisID: 'y' },
+          { label: 'Nouveaux users', data: d.users, type: 'line', borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#10b981', tension: 0.4, yAxisID: 'y1' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x:  { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#566070', font: { size: 11 } } },
+          y:  { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#566070', font: { size: 11 } }, position: 'left' },
+          y1: { grid: { display: false }, ticks: { color: '#10b981', font: { size: 11 } }, position: 'right' }
+        }
+      }
+    });
+  }
+
+  // ============================================================
+  //  DONUT INTENTS
+  // ============================================================
+  let donutInst = null;
+  async function loadIntentDist() {
+    const raw = await fetchJSON(API.intentDist) || [
+      { nom: 'FAQ', count: 38 }, { nom: 'Conversion', count: 22 },
+      { nom: 'Tracking', count: 18 }, { nom: 'Agent', count: 12 }, { nom: 'Fallback', count: 10 }
+    ];
+    const total = raw.reduce((s, x) => s + x.count, 0);
+    const labels = raw.map(x => x.nom);
+    const data   = raw.map(x => x.count);
+
+    if (donutInst) donutInst.destroy();
+    donutInst = new Chart(document.getElementById('intentDonut'), {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data, backgroundColor: COLORS, borderWidth: 0, hoverOffset: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false } } }
+    });
+
+    document.getElementById('intentLegend').innerHTML = raw.map((x, i) =>
+      `<div class="legend-item"><div class="legend-dot" style="background:${COLORS[i]}"></div>${x.nom} ${Math.round(x.count/total*100)}%</div>`
+    ).join('');
+
+    document.getElementById('intentBars').innerHTML = raw.map((x, i) => {
+      const pct = Math.round(x.count / total * 100);
+      return `<div class="progress-row">
+        <div class="progress-info"><span class="progress-name">${x.nom}</span><span class="progress-pct">${pct}%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${COLORS[i]}"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // ============================================================
+  //  CONVERSATIONS TABLE
+  // ============================================================
+  let allConvs = [];
+
+  async function loadConvs() {
+    const d = await fetchJSON(API.convs) || [
+      { id_conv: 1041, user_nom: 'Moussa K.', message_user: 'Où est mon colis CTX-882 ?', nom_intent: 'suivi_colis', type_intent: 'operation', confidence: 0.94, created_at: '2025-05-30T14:22' },
+      { id_conv: 1040, user_nom: 'Aïcha S.',  message_user: 'Combien vaut 200€ en FCFA ?', nom_intent: 'conversion_devise', type_intent: 'information', confidence: 0.97, created_at: '2025-05-30T13:55' },
+      { id_conv: 1039, user_nom: 'Ibrahim D.', message_user: 'Je veux parler à un agent', nom_intent: 'contact_agent', type_intent: 'operation', confidence: 0.89, created_at: '2025-05-30T13:40' },
+      { id_conv: 1038, user_nom: 'Fatou B.',  message_user: 'Quels sont vos tarifs ?', nom_intent: 'infos_tarif', type_intent: 'information', confidence: 0.91, created_at: '2025-05-30T12:18' },
+      { id_conv: 1037, user_nom: 'Seydou T.', message_user: 'Comment envoyer un colis ?', nom_intent: 'envoi_colis', type_intent: 'information', confidence: 0.86, created_at: '2025-05-30T11:03' },
+      { id_conv: 1036, user_nom: 'Mariam C.', message_user: 'Bonjour bonsoir ahaha', nom_intent: 'fallback', type_intent: 'information', confidence: 0.31, created_at: '2025-05-30T10:47' },
+    ];
+    allConvs = d;
+    document.getElementById('convBadge').textContent = d.length;
+    renderConvs(d);
+  }
+
+  function renderConvs(list) {
+    document.getElementById('convTable').innerHTML = list.map(c => {
+      const conf = Math.round((c.confidence || 0) * 100);
+      const confColor = conf > 80 ? '#10b981' : conf > 50 ? '#f59e0b' : '#ef4444';
+      const typeBadge = c.type_intent === 'operation' ? 'badge-purple' : 'badge-blue';
+      const date = c.created_at ? c.created_at.replace('T', ' ').slice(0, 16) : '—';
+      return `<tr>
+        <td class="mono">#${c.id_conv}</td>
+        <td><span style="font-weight:500">${c.user_nom || '—'}</span></td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)">${c.message_user}</td>
+        <td><span class="badge badge-blue">${c.nom_intent || '—'}</span></td>
+        <td><span class="badge ${typeBadge}">${c.type_intent || '—'}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="conf-bar"><div class="conf-fill" style="width:${conf}%;background:${confColor}"></div></div>
+            <span style="font-size:12px;color:${confColor}">${conf}%</span>
+          </div>
+        </td>
+        <td class="mono">${date}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function filterConvs() {
+    const q = document.getElementById('convSearch').value.toLowerCase();
+    renderConvs(allConvs.filter(c =>
+      (c.message_user || '').toLowerCase().includes(q) ||
+      (c.user_nom || '').toLowerCase().includes(q) ||
+      (c.nom_intent || '').toLowerCase().includes(q)
+    ));
+  }
+
+  function exportCSV() {
+    const headers = ['ID','Utilisateur','Message','Intent','Type','Confiance','Date'];
+    const rows = allConvs.map(c => [
+      c.id_conv, c.user_nom, '"' + (c.message_user || '').replace(/"/g, '""') + '"',
+      c.nom_intent, c.type_intent, Math.round((c.confidence || 0) * 100) + '%', c.created_at
+    ]);
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'conversations_ctexi.csv';
+    a.click();
+  }
+
+  // ============================================================
+  //  INTENTIONS
+  // ============================================================
+  async function loadIntents() {
+    const d = await fetchJSON(API.intents) || [
+      { nom: 'suivi_colis', type_intent: 'operation', action_handler: 'tracking_handler', nb_exemples: 12, nb_reponses: 5 },
+      { nom: 'conversion_devise', type_intent: 'information', action_handler: 'conversion_handler', nb_exemples: 18, nb_reponses: 3 },
+      { nom: 'contact_agent', type_intent: 'operation', action_handler: 'agent_handler', nb_exemples: 9, nb_reponses: 4 },
+      { nom: 'infos_tarif', type_intent: 'information', action_handler: 'info_handler', nb_exemples: 15, nb_reponses: 6 },
+      { nom: 'fallback', type_intent: 'information', action_handler: 'fallback_handler', nb_exemples: 6, nb_reponses: 2 },
+    ];
+    document.getElementById('intentCount').textContent = d.length + ' intentions configurées';
+    document.getElementById('intentTable').innerHTML = d.map(i => `<tr>
+      <td style="font-weight:500">${i.nom}</td>
+      <td><span class="badge ${i.type_intent === 'operation' ? 'badge-purple' : 'badge-blue'}">${i.type_intent}</span></td>
+      <td class="mono">${i.action_handler || '—'}</td>
+      <td><span class="badge badge-green">${i.nb_exemples || 0} phrases</span></td>
+      <td><span class="badge badge-amber">${i.nb_reponses || 0} réponses</span></td>
+      <td><div style="display:flex;gap:6px">
+        <button class="btn" style="padding:4px 10px;font-size:11px"><i class="ti ti-edit" style="font-size:13px"></i></button>
+        <button class="btn" style="padding:4px 10px;font-size:11px;color:var(--red);border-color:rgba(239,68,68,0.3)"><i class="ti ti-trash" style="font-size:13px"></i></button>
+      </div></td>
+    </tr>`).join('');
+  }
+
+  // ============================================================
+  //  USERS
+  // ============================================================
+  async function loadUsers() {
+    const d = await fetchJSON(API.users) || [
+      { id_user: 1, nom: 'Konaté', prenom: 'Moussa', email: 'moussa@gmail.com', telephone: '+226 70 00 11 22', est_admin: false },
+      { id_user: 2, nom: 'Sawadogo', prenom: 'Aïcha', email: 'aicha@gmail.com', telephone: '+226 76 55 88 00', est_admin: false },
+      { id_user: 3, nom: 'Diallo', prenom: 'Ibrahim', email: 'ibrahim@gmail.com', telephone: '+226 65 33 44 55', est_admin: true },
+    ];
+    document.getElementById('usersGrid').innerHTML = d.map((u, i) => {
+      const initials = ((u.prenom || '')[0] || '') + ((u.nom || '')[0] || '');
+      const fullName = (u.prenom || '') + ' ' + (u.nom || '');
+      return `<div class="user-item">
+        <div class="user-av" style="background:${AVG_COLORS[i % AVG_COLORS.length]}">${initials.toUpperCase()}</div>
+        <div class="user-info">
+          <div class="user-uname">${fullName}</div>
+          <div class="user-email">${u.email}</div>
+          <div class="user-meta">
+            ${u.est_admin ? '<span class="badge badge-amber">Admin</span>' : '<span class="badge badge-blue">User</span>'}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="btn-icon" title="Voir"><i class="ti ti-eye" style="font-size:14px"></i></button>
+          <button class="btn-icon" title="Éditer"><i class="ti ti-edit" style="font-size:14px"></i></button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ============================================================
+  //  AGENTS
+  // ============================================================
+  async function loadAgents() {
+    const d = await fetchJSON(API.agents) || [
+      { id_agent: 1, email: 'agent1@ctexi.com', whatsapp: '+226 76 10 00 01', telephone: '+226 70 10 00 01', nom_intent: 'contact_agent', actif: true },
+      { id_agent: 2, email: 'agent2@ctexi.com', whatsapp: '+226 76 10 00 02', telephone: '+226 70 10 00 02', nom_intent: 'suivi_colis', actif: true },
+      { id_agent: 3, email: 'agent3@ctexi.com', whatsapp: '+226 76 10 00 03', telephone: '+226 70 10 00 03', nom_intent: 'envoi_colis', actif: false },
+    ];
+    const actifs = d.filter(a => a.actif).length;
+    document.getElementById('agentCount').innerHTML = `${d.length} agents <span style="color:var(--green)">— ${actifs} actifs</span>`;
+    document.getElementById('agentsTable').innerHTML = d.map((a, i) => `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="user-av" style="width:30px;height:30px;font-size:11px;background:${AVG_COLORS[i % AVG_COLORS.length]}">
+          A${a.id_agent}
+        </div>
+        <span style="font-size:13px">Agent ${a.id_agent}</span>
+      </div></td>
+      <td style="color:var(--text2)">${a.email}</td>
+      <td class="mono">${a.whatsapp}</td>
+      <td class="mono">${a.telephone}</td>
+      <td><span class="badge badge-blue">${a.nom_intent || '—'}</span></td>
+      <td><span class="badge ${a.actif ? 'badge-green' : 'badge-red'}">${a.actif ? 'Actif' : 'Inactif'}</span></td>
+      <td><div style="display:flex;gap:6px">
+        <button class="btn" style="padding:4px 10px;font-size:11px"><i class="ti ti-edit" style="font-size:13px"></i></button>
+        <button class="btn" style="padding:4px 10px;font-size:11px;color:var(--red);border-color:rgba(239,68,68,0.3)"><i class="ti ti-trash" style="font-size:13px"></i></button>
+      </div></td>
+    </tr>`).join('');
+  }
+
+  // ============================================================
+  //  COLIS
+  // ============================================================
+  const STATUT_BADGE = { 'livré': 'badge-green', 'en transit': 'badge-blue', 'en attente': 'badge-amber', 'retourné': 'badge-red' };
+
+  async function loadColis() {
+    const d = await fetchJSON(API.colis) || [
+      { code_colis: 'CTX-882', user_nom: 'Moussa Konaté', type_colis: 'Express', modes: 'Aérien', statut: 'en transit', derniere_maj: '2025-05-29T14:00' },
+      { code_colis: 'CTX-891', user_nom: 'Aïcha Sawadogo', type_colis: 'Standard', modes: 'Terrestre', statut: 'livré', derniere_maj: '2025-05-28T10:30' },
+      { code_colis: 'CTX-903', user_nom: 'Ibrahim Diallo', type_colis: 'Fragile', modes: 'Maritime', statut: 'en attente', derniere_maj: '2025-05-27T09:15' },
+    ];
+
+    const counts = {};
+    d.forEach(c => { counts[c.statut] = (counts[c.statut] || 0) + 1; });
+    const kpiDef = [
+      { label: 'Livré', key: 'livré', cls: 'green' },
+      { label: 'En transit', key: 'en transit', cls: 'blue' },
+      { label: 'En attente', key: 'en attente', cls: 'amber' },
+      { label: 'Retourné', key: 'retourné', cls: 'red' },
+    ];
+    document.getElementById('colisKpi').innerHTML = kpiDef.map(k =>
+      `<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${counts[k.key] || 0}</div></div>`
+    ).join('');
+
+    document.getElementById('colisCount').textContent = d.length + ' colis trackés';
+    document.getElementById('colisTable').innerHTML = d.map(c => `<tr>
+      <td class="mono" style="color:var(--accent)">${c.code_colis}</td>
+      <td>${c.user_nom || '—'}</td>
+      <td>${c.type_colis || '—'}</td>
+      <td>${c.modes || '—'}</td>
+      <td><span class="badge ${STATUT_BADGE[c.statut] || 'badge-blue'}">${c.statut}</span></td>
+      <td class="mono">${(c.derniere_maj || '').replace('T', ' ').slice(0, 16)}</td>
+    </tr>`).join('');
+  }
+
+  // ============================================================
+  //  INIT — charge tout au démarrage
+  // ============================================================
+  loadStats();
+  loadActivity();
+  loadIntentDist();
+  loadConvs();
+  loadIntents();
+  loadUsers();
+  loadAgents();
+  loadColis();
+</script>
 </body>
 </html>

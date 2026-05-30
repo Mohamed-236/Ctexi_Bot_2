@@ -191,13 +191,13 @@ def login():
 
         session['user_id'] = user['id_user']
         session['user_name'] = user['nom']
-        session['is_admin'] = user['est_admin']
+        session['est_admin'] = user['est_admin']
 
         # CAS API
         if request.is_json:
             return jsonify({
                 "status": "success",
-                "is_admin": user["est_admin"],
+                "est_admin": user["est_admin"],
                 "redirect": "/api/dashboard/dashboard_index" if user["est_admin"] else "/api/auth/chatbot",
                 "user": {
                     "id": user["id_user"],
