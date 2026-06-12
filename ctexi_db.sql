@@ -77,6 +77,10 @@ CREATE TABLE chatbot.conversations(
 );
 
 
+
+TRUNCATE chatbot.conversations         RESTART IDENTITY;
+
+
 SELECT * FROM chatbot.conversations;
 
 
@@ -87,15 +91,8 @@ DROP TABLE chatbot.conversations CASCADE;
 
 --Table intention
 
-CREATE TABLE chatbot.intention(
-    id_intent SERIAL PRIMARY KEY,
-    nom VARCHAR(100) UNIQUE NOT NULL,
-    type_intent VARCHAR(50) NOT NULL,
-    descriptions TEXT,
-    dates TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
-
+SELECT * FROM chatbot.intention;
 
 CREATE TABLE chatbot.intention (
     id_intent SERIAL PRIMARY KEY,
@@ -162,6 +159,8 @@ CREATE TABLE chatbot.intent_responses(
     priorite INT DEFAULT 1
 );
 
+
+SELECT * FROM chatbot.intent_responses
 
 
 ----------------------------------NSERTION DES AGENTS EXEMPLE--------------------------------------
@@ -530,6 +529,8 @@ SELECT * FROM chatbot.faq;
 TRUNCATE chatbot.intent_responses  RESTART IDENTITY CASCADE;
 TRUNCATE chatbot.intent_examples   RESTART IDENTITY CASCADE;
 TRUNCATE chatbot.intention         RESTART IDENTITY CASCADE;
+
+
 
 SELECT * FROM chatbot.intent_responses;
 

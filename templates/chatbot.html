@@ -1,117 +1,838 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ctexi-Bot</title>
-    
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@48,400,0,0&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,1,0" />
-    <link rel="stylesheet" href="{{url_for('static', filename='index.css')}}"/>
-  </head>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ctexi-Bot — Assistant fret Chine · Afrique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@48,400,0,0&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,1,0" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep:      #07091C;
+      --bg-surface:   #0D0F2A;
+      --bg-card:      #131535;
+      --bg-input:     #191C42;
+      --accent:       #7C5CFC;
+      --accent-light: #A78BFA;
+      --accent-glow:  rgba(124,92,252,.38);
+      --teal:         #2DD4BF;
+      --red:          #FF6B6B;
+      --gold:         #F5C518;
+      --text-primary: #EDE8FF;
+      --text-muted:   #6E6B98;
+      --border:       rgba(124,92,252,.2);
+      --border-soft:  rgba(255,255,255,.055);
+      --user-grad:    linear-gradient(135deg,#5C3FE8 0%,#9D7EFB 100%);
+      --hdr-grad:     linear-gradient(135deg,#2E168A 0%,#6643DB 55%,#9B74F8 100%);
+      --popup-shadow: 0 0 0 1px var(--border),
+                      0 24px 60px rgba(0,0,0,.75),
+                      0 0 120px rgba(124,92,252,.15);
+    }
 
-  <body>
+    *{margin:0;padding:0;box-sizing:border-box}
 
-    <!-- ======================================================
-    TOGGLE CHATBOT
-    ====================================================== -->
-    <button id="chatbot-toggler">
-      <span class="material-symbols-outlined">smart_toy</span>
-      <span class="material-symbols-rounded">close</span>
-    </button>
+    /* ══════════════════════════════════════
+       LANDING PAGE DERRIÈRE
+    ══════════════════════════════════════ */
+    body {
+      min-height:100vh;
+      font-family:'Nunito',sans-serif;
+      background: #07091C;
+      overflow-x: hidden;
+    }
 
-    <!-- ======================================================
-    LOGOUT
-    ====================================================== -->
-    <div style="position:absolute; top:20px; right:20px;">
+    /* Fond animé avec particules */
+    .bg-scene {
+      position:fixed;inset:0;z-index:0;
+      background: radial-gradient(ellipse at 20% 30%, rgba(124,92,252,.18) 0%, transparent 55%),
+                  radial-gradient(ellipse at 80% 70%, rgba(45,212,191,.10) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 50%, rgba(30,20,80,.8) 0%, #07091C 80%);
+    }
+
+    /* Grille de fond */
+    .bg-grid {
+      position:fixed;inset:0;z-index:0;
+      background-image:
+        linear-gradient(rgba(124,92,252,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,92,252,.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    }
+
+    /* Orbes lumineux flottants */
+    .orb {
+      position:fixed;border-radius:50%;filter:blur(80px);
+      pointer-events:none;z-index:0;animation:orbFloat 8s ease-in-out infinite;
+    }
+    .orb-1{ width:500px;height:500px;background:rgba(124,92,252,.12);top:-100px;left:-100px;animation-delay:0s; }
+    .orb-2{ width:400px;height:400px;background:rgba(45,212,191,.08);bottom:-80px;right:-80px;animation-delay:-3s; }
+    .orb-3{ width:300px;height:300px;background:rgba(167,139,250,.1);top:40%;left:60%;animation-delay:-5s; }
+    @keyframes orbFloat {
+      0%,100%{transform:translate(0,0)}
+      33%    {transform:translate(30px,-20px)}
+      66%    {transform:translate(-20px,15px)}
+    }
+
+    /* HERO CONTENT */
+    .hero {
+      position:relative;z-index:1;
+      min-height:100vh;
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      padding:40px 20px;
+      text-align:center;
+    }
+
+    .hero-badge {
+      display:inline-flex;align-items:center;gap:8px;
+      background:rgba(124,92,252,.12);
+      border:1px solid rgba(124,92,252,.3);
+      color:var(--accent-light);
+      font-size:.75rem;font-weight:700;
+      padding:6px 16px;border-radius:30px;
+      letter-spacing:.8px;text-transform:uppercase;
+      margin-bottom:32px;
+      animation:fadeUp .6s ease both;
+    }
+
+    .hero-badge-dot {
+      width:6px;height:6px;background:var(--teal);
+      border-radius:50%;animation:onlinePulse 2s infinite;
+    }
+
+    .hero-eyebrow {
+      font-family:'Sora',sans-serif;
+      font-size:.8rem;font-weight:600;
+      color:var(--text-muted);
+      letter-spacing:3px;text-transform:uppercase;
+      margin-bottom:16px;
+      animation:fadeUp .6s .1s ease both;
+    }
+
+    .hero-title {
+      font-family:'Sora',sans-serif;
+      font-size:clamp(2.4rem, 6vw, 4.2rem);
+      font-weight:700;
+      color:var(--text-primary);
+      line-height:1.1;
+      letter-spacing:-1.5px;
+      margin-bottom:8px;
+      animation:fadeUp .6s .15s ease both;
+    }
+
+    .hero-title .accent-word {
+      background:linear-gradient(135deg,var(--accent-light),var(--teal));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+
+    .hero-title .line2 {
+      display:block;
+      font-size:.55em;font-weight:300;
+      color:var(--text-muted);letter-spacing:0;
+      margin-top:8px;
+    }
+
+    .hero-sub {
+      font-size:1rem;color:var(--text-muted);
+      max-width:460px;line-height:1.7;
+      margin:0 auto 40px;
+      animation:fadeUp .6s .25s ease both;
+    }
+
+    /* Route Chine → Burkina */
+    .route-pill {
+      display:inline-flex;align-items:center;gap:10px;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--border-soft);
+      padding:10px 22px;border-radius:40px;
+      margin-bottom:48px;font-size:.88rem;
+      color:var(--text-primary);
+      animation:fadeUp .6s .3s ease both;
+    }
+    .route-flag { font-size:1.2rem; }
+    .route-arrow {
+      color:var(--accent-light);font-size:1.1rem;
+      animation:arrowPulse 2s ease-in-out infinite;
+    }
+    @keyframes arrowPulse {
+      0%,100%{transform:translateX(0);opacity:.7}
+      50%    {transform:translateX(5px);opacity:1}
+    }
+
+    /* Stats row */
+    .stats-row {
+      display:flex;gap:32px;justify-content:center;
+      margin-bottom:56px;flex-wrap:wrap;
+      animation:fadeUp .6s .35s ease both;
+    }
+    .stat-item { text-align:center; }
+    .stat-num {
+      font-family:'Sora',sans-serif;
+      font-size:1.8rem;font-weight:700;
+      color:var(--text-primary);letter-spacing:-1px;
+    }
+    .stat-num .stat-accent { color:var(--accent-light); }
+    .stat-label { font-size:.73rem;color:var(--text-muted);font-weight:600;letter-spacing:.5px;margin-top:2px; }
+    .stat-div { width:1px;background:var(--border-soft);align-self:center;height:36px; }
+
+    /* CTA principal */
+    .cta-group {
+      display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
+      animation:fadeUp .6s .4s ease both;
+    }
+
+    .btn-cta {
+      display:inline-flex;align-items:center;gap:8px;
+      padding:14px 28px;border-radius:14px;
+      font-family:'Nunito',sans-serif;font-size:.92rem;font-weight:700;
+      cursor:pointer;transition:all .25s cubic-bezier(.34,1.56,.64,1);
+      border:none;text-decoration:none;
+    }
+    .btn-cta-primary {
+      background:linear-gradient(135deg,var(--accent),#5C3FE8);
+      color:#fff;
+      box-shadow:0 8px 28px var(--accent-glow);
+    }
+    .btn-cta-primary:hover{transform:translateY(-3px);box-shadow:0 14px 40px var(--accent-glow)}
+    .btn-cta-ghost {
+      background:rgba(255,255,255,.05);
+      color:var(--text-primary);
+      border:1px solid var(--border-soft);
+    }
+    .btn-cta-ghost:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
+
+    /* Services cards en fond */
+    .services-preview {
+      position:relative;z-index:1;
+      display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
+      padding:0 20px 60px;
+      animation:fadeUp .6s .5s ease both;
+    }
+
+    .svc-card {
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:16px;padding:16px 20px;
+      display:flex;flex-direction:column;align-items:center;gap:6px;
+      min-width:110px;
+      transition:all .25s ease;cursor:pointer;
+    }
+    .svc-card:hover{
+      background:rgba(124,92,252,.1);
+      border-color:rgba(124,92,252,.3);
+      transform:translateY(-4px);
+    }
+    .svc-card-icon { font-size:1.6rem; }
+    .svc-card-name { font-size:.73rem;font-weight:700;color:var(--text-muted);letter-spacing:.3px; }
+
+    /* LOGOUT */
+    .page-header {
+      position:fixed;top:0;left:0;right:0;z-index:10;
+      display:flex;justify-content:space-between;align-items:center;
+      padding:18px 28px;
+      background:rgba(7,9,28,.6);backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--border-soft);
+    }
+    .page-logo {
+      font-family:'Sora',sans-serif;font-size:1.1rem;font-weight:700;
+      color:var(--text-primary);letter-spacing:-.3px;
+    }
+    .page-logo span { color:var(--accent-light); }
+    .logout-btn button {
+      font-family:'Nunito',sans-serif;padding:7px 16px;
+      border-radius:10px;border:1px solid rgba(255,255,255,.15);
+      background:rgba(255,255,255,.07);color:rgba(255,255,255,.75);
+      cursor:pointer;font-weight:700;font-size:.82rem;
+      transition:all .2s;
+    }
+    .logout-btn button:hover{background:rgba(255,255,255,.15);color:#fff}
+
+    @keyframes fadeUp {
+      from{opacity:0;transform:translateY(18px)}
+      to  {opacity:1;transform:translateY(0)}
+    }
+
+    /* ══════════════════════════════════════
+       TOGGLE BUTTON
+    ══════════════════════════════════════ */
+    #chatbot-toggler {
+      position:fixed;bottom:28px;right:28px;
+      height:60px;width:60px;border:none;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;border-radius:50%;
+      background:var(--hdr-grad);
+      z-index:1000;
+      box-shadow:0 4px 24px var(--accent-glow);
+      animation:toggleGlow 3s ease-in-out infinite;
+      transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes toggleGlow {
+      0%,100%{box-shadow:0 4px 24px var(--accent-glow),0 0 0 0 rgba(124,92,252,.35)}
+      50%    {box-shadow:0 6px 32px var(--accent-glow),0 0 0 12px rgba(124,92,252,.0)}
+    }
+    body.show-chatbot #chatbot-toggler{transform:rotate(90deg);animation:none}
+    #chatbot-toggler span{color:#fff;position:absolute;font-size:26px;transition:opacity .2s}
+    body.show-chatbot #chatbot-toggler span:first-child,
+    #chatbot-toggler span:last-child{opacity:0}
+    body.show-chatbot #chatbot-toggler span:last-child{opacity:1}
+
+    /* ══════════════════════════════════════
+       OVERLAY (fond semi-transparent quand popup ouverte)
+    ══════════════════════════════════════ */
+    .chat-overlay {
+      position:fixed;inset:0;z-index:998;
+      background:rgba(7,9,28,.65);
+      backdrop-filter:blur(6px);
+      opacity:0;pointer-events:none;
+      transition:opacity .25s ease;
+    }
+    body.show-chatbot .chat-overlay{opacity:1;pointer-events:auto}
+
+    /* ══════════════════════════════════════
+       POPUP — CENTRÉ
+    ══════════════════════════════════════ */
+    .chatbot-popup {
+      position:fixed;
+      left:50%;top:50%;
+      transform:translate(-50%,-50%) scale(.1);
+      transform-origin:center center;
+
+      width:min(680px, calc(100vw - 32px));
+      height:min(820px, calc(100vh - 80px));
+      min-height:500px;
+
+      background:var(--bg-deep);
+      overflow:hidden;border-radius:24px;
+      opacity:0;pointer-events:none;
+      box-shadow:var(--popup-shadow);
+      border:1px solid var(--border);
+      transition:opacity .25s ease, transform .28s cubic-bezier(.34,1.56,.64,1);
+      z-index:999;
+      display:flex;flex-direction:column;
+    }
+    body.show-chatbot .chatbot-popup{
+      opacity:1;pointer-events:auto;
+      transform:translate(-50%,-50%) scale(1);
+    }
+
+    /* ══════════════════════════════════════
+       HEADER POPUP
+    ══════════════════════════════════════ */
+    .chat-header {
+      display:flex;align-items:center;
+      background:var(--hdr-grad);
+      padding:15px 20px;
+      justify-content:space-between;flex-shrink:0;
+      position:relative;overflow:hidden;
+    }
+    .chat-header::after {
+      content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse at 85% 30%,rgba(255,255,255,.1) 0%,transparent 65%);
+      pointer-events:none;
+    }
+    .header-info{display:flex;gap:12px;align-items:center;position:relative;z-index:1}
+    .chatbot-logo {
+      height:44px;width:44px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(255,255,255,.14);
+      border-radius:14px;font-size:21px;flex-shrink:0;
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow:0 4px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18);
+    }
+    .logo-text{color:#fff;font-family:'Sora',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:-.3px}
+    .header-subtitle{color:rgba(255,255,255,.72);font-size:.7rem;margin-top:3px;display:flex;align-items:center;gap:5px;font-weight:600}
+    .online-dot{width:7px;height:7px;background:var(--teal);border-radius:50%;box-shadow:0 0 7px var(--teal);animation:onlinePulse 2.2s ease-in-out infinite}
+    @keyframes onlinePulse{0%,100%{opacity:1}50%{opacity:.6;box-shadow:0 0 14px var(--teal)}}
+    #close-chatbot{
+      border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.82);
+      height:36px;width:36px;font-size:1.4rem;cursor:pointer;border-radius:11px;
+      background:rgba(255,255,255,.1);transition:.2s ease;
+      display:flex;align-items:center;justify-content:center;position:relative;z-index:1;
+    }
+    #close-chatbot:hover{background:rgba(255,255,255,.2);color:#fff}
+
+    /* ══════════════════════════════════════
+       QUICK BAR
+    ══════════════════════════════════════ */
+    .quick-bar{
+      display:flex;gap:7px;background:var(--bg-surface);
+      padding:10px 14px;border-bottom:1px solid var(--border-soft);
+      flex-shrink:0;overflow-x:auto;scrollbar-width:none;
+    }
+    .quick-bar::-webkit-scrollbar{display:none}
+    .quick-btn{
+      background:var(--bg-card);color:var(--accent-light);
+      border:1px solid var(--border);padding:7px 14px;border-radius:20px;
+      cursor:pointer;font-size:.77rem;font-family:'Nunito',sans-serif;font-weight:700;
+      transition:all .22s ease;white-space:nowrap;flex-shrink:0;
+    }
+    .quick-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px var(--accent-glow)}
+
+    /* ══════════════════════════════════════
+       MESSAGES
+    ══════════════════════════════════════ */
+    .chat-body-wrap{position:relative;flex:1;overflow:hidden;display:flex;flex-direction:column}
+    .chat-body{
+      padding:20px 16px;display:flex;gap:14px;
+      flex:1;overflow-y:auto;flex-direction:column;
+      background:var(--bg-deep);
+      scrollbar-width:thin;scrollbar-color:var(--bg-card) transparent;
+    }
+    .chat-body::-webkit-scrollbar{width:4px}
+    .chat-body::-webkit-scrollbar-thumb{background:var(--bg-card);border-radius:4px}
+
+    .scroll-down-btn{
+      position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+      background:var(--accent);color:#fff;border:none;
+      width:32px;height:32px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;font-size:18px;
+      box-shadow:0 4px 16px var(--accent-glow);
+      transition:all .25s ease;opacity:0;pointer-events:none;z-index:10;
+    }
+    .scroll-down-btn.visible{opacity:1;pointer-events:auto}
+
+    .chat-body .message{display:flex;gap:10px;align-items:flex-start}
+    .bot-avatar-wrap{
+      width:33px;height:33px;border-radius:11px;
+      background:linear-gradient(135deg,#2E168A,var(--accent));
+      color:#fff;display:flex;align-items:center;justify-content:center;
+      font-size:15px;flex-shrink:0;margin-top:2px;
+      box-shadow:0 4px 14px var(--accent-glow);
+      border:1px solid rgba(255,255,255,.1);
+    }
+    .chat-body .user-message{flex-direction:column;align-items:flex-end}
+    .chat-body .message .message-text{
+      padding:12px 16px;max-width:80%;font-size:.9rem;line-height:1.72;
+      word-wrap:break-word;border-radius:4px 16px 16px 16px;
+      background:var(--bg-surface);color:var(--text-primary);
+      border:1px solid var(--border-soft);
+      animation:msgIn .3s cubic-bezier(.34,1.56,.64,1);
+      font-family:'Nunito',sans-serif;font-weight:500;
+    }
+    .chat-body .user-message .message-text{
+      color:#fff;background:var(--user-grad);
+      border-radius:16px 16px 4px 16px;border:none;
+      box-shadow:0 4px 18px var(--accent-glow);
+    }
+    .bot-message.thinking .message-text{padding:14px 18px}
+    @keyframes msgIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+    /* THINKING */
+    .thinking-indicator{display:flex;gap:5px;padding:2px 0;align-items:center}
+    .thinking-indicator .dot{height:8px;width:8px;border-radius:50%;background:var(--accent-light);opacity:.65;animation:dotBounce 1.6s ease-in-out infinite}
+    .dot:nth-child(1){animation-delay:0s}.dot:nth-child(2){animation-delay:.18s}.dot:nth-child(3){animation-delay:.36s}
+    @keyframes dotBounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-7px);opacity:1}}
+
+    /* CONTENU BOT */
+    .message-text p{margin-bottom:8px}.message-text p:last-child{margin-bottom:0}
+    .message-text ul,.message-text ol{padding-left:18px;margin:6px 0}
+    .message-text li{margin-bottom:5px}
+    .message-text strong,.message-text b{font-weight:700;color:var(--accent-light)}
+    .message-text h1,.message-text h2,.message-text h3{margin:10px 0 5px;color:var(--text-primary)}
+
+    /* TRACKING CARD */
+    .tracking-card{
+      background:var(--bg-card);border:1px solid var(--border);
+      border-radius:15px;padding:14px 16px;margin-top:12px;
+      font-size:.86rem;display:flex;flex-direction:column;gap:10px;
+      box-shadow:0 4px 24px rgba(0,0,0,.35);
+    }
+    .tracking-row{display:flex;align-items:center;gap:10px;color:var(--text-primary)}
+    .tracking-row .tlabel{font-weight:700;color:var(--accent-light);min-width:115px;font-size:.78rem;text-transform:uppercase;letter-spacing:.5px}
+    .tracking-status{display:inline-flex;align-items:center;gap:5px;background:rgba(45,212,191,.1);color:var(--teal);padding:4px 12px;border-radius:20px;font-weight:700;border:1px solid rgba(45,212,191,.22);font-size:.8rem}
+
+    /* BOUTONS SERVICES */
+    .service-buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+    .service-btn{
+      background:var(--bg-card);border:1px solid var(--border);border-radius:15px;padding:13px 14px;
+      cursor:pointer;font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:600;
+      color:var(--text-primary);text-align:left;
+      transition:all .25s cubic-bezier(.34,1.56,.64,1);
+      display:flex;flex-direction:column;gap:5px;animation:msgIn .3s ease;
+      position:relative;overflow:hidden;
+    }
+    .service-btn:hover{transform:translateY(-3px);box-shadow:0 8px 26px var(--accent-glow);border-color:var(--accent);background:rgba(124,92,252,.15)}
+    .service-btn .svc-icon{font-size:1.4rem}.service-btn .svc-name{font-weight:700;font-size:.86rem}.service-btn .svc-desc{font-size:.72rem;color:var(--text-muted);line-height:1.3}
+
+    /* BOUTONS AGENT */
+    .agent-contact{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+    .agent-btn{
+      text-decoration:none;display:flex;align-items:center;gap:12px;
+      padding:12px 16px;border-radius:14px;font-weight:600;font-size:.88rem;
+      font-family:'Nunito',sans-serif;transition:all .25s cubic-bezier(.34,1.56,.64,1);
+      animation:msgIn .3s ease;border:1px solid;
+    }
+    .agent-btn.whatsapp{background:rgba(37,211,102,.08);color:#25D366;border-color:rgba(37,211,102,.25)}
+    .agent-btn.whatsapp:hover{background:#25D366;color:#fff;box-shadow:0 6px 22px rgba(37,211,102,.35);transform:translateY(-2px)}
+    .agent-btn.email{background:rgba(124,92,252,.08);color:var(--accent-light);border-color:var(--border)}
+    .agent-btn.email:hover{background:var(--accent);color:#fff;box-shadow:0 6px 22px var(--accent-glow);transform:translateY(-2px)}
+    .agent-btn.tel{background:rgba(255,107,107,.08);color:var(--red);border-color:rgba(255,107,107,.25)}
+    .agent-btn.tel:hover{background:var(--red);color:#fff;box-shadow:0 6px 22px rgba(255,107,107,.35);transform:translateY(-2px)}
+    .agent-btn .abtn-icon{font-size:1.2rem;flex-shrink:0}
+    .agent-btn .abtn-text{display:flex;flex-direction:column}
+    .agent-btn .abtn-label{font-weight:700;font-size:.86rem}
+    .agent-btn .abtn-val{font-size:.74rem;opacity:.6;margin-top:1px}
+
+    /* FOOTER */
+    .chat-footer{background:var(--bg-surface);padding:11px 14px 14px;border-top:1px solid var(--border-soft);flex-shrink:0}
+    .chat-form{display:flex;align-items:center;background:var(--bg-input);border-radius:28px;border:1.5px solid var(--border);transition:border-color .2s,box-shadow .2s}
+    .chat-form:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,252,.14)}
+    .message-input{border:none;outline:none;height:46px;width:100%;resize:none;max-height:160px;font-size:.93rem;padding:12px 16px;border-radius:inherit;background:transparent;font-family:'Nunito',sans-serif;color:var(--text-primary);scrollbar-width:thin}
+    .message-input::placeholder{color:var(--text-muted)}
+    .chat-controls{display:flex;height:46px;gap:2px;align-items:center;align-self:flex-end;padding-right:6px}
+    .chat-controls button{height:34px;width:34px;border:none;font-size:1.1rem;cursor:pointer;color:var(--text-muted);background:none;border-radius:50%;transition:.2s ease;display:flex;align-items:center;justify-content:center}
+    #send-message{color:#fff !important;display:none;background:var(--user-grad) !important;box-shadow:0 2px 12px var(--accent-glow)}
+    .message-input:valid ~ .chat-controls #send-message{display:flex}
+    #send-message:hover{transform:scale(1.1)}
+    .chat-controls button:hover{background:var(--bg-card);color:var(--accent-light)}
+    #mic-btn.listening{color:var(--red) !important;animation:pulseMic 1s infinite}
+    @keyframes pulseMic{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+    /* RESPONSIVE */
+    @media(max-width:600px){
+      .chatbot-popup{
+        left:0;top:unset;bottom:0;
+        transform:translateY(100%);
+        transform-origin:bottom center;
+        width:100%;border-radius:22px 22px 0 0;
+        height:min(90vh,700px);
+      }
+      body.show-chatbot .chatbot-popup{transform:translateY(0)}
+      body.show-chatbot #chatbot-toggler{display:none}
+      .service-buttons{grid-template-columns:1fr}
+      .stats-row{gap:18px}
+      .stat-div{display:none}
+      .hero-title{font-size:2rem}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- FOND ANIMÉ -->
+  <div class="bg-scene"></div>
+  <div class="bg-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- HEADER FIXE -->
+  <header class="page-header">
+    <div class="page-logo">CTEXI<span>Bot</span></div>
+    <div class="logout-btn">
       <form method="POST" action="{{ url_for('auth.logout') }}">
-        <button type="submit">Déconnexion</button>
+        <button type="submit">🚪 Déconnexion</button>
+      </form>
+    </div>
+  </header>
+
+  <!-- CONTENU HERO -->
+  <main class="hero">
+
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Assistant IA · Disponible 24h/24
+    </div>
+
+    <p class="hero-eyebrow">Cherif Trans Expert International</p>
+
+    <h1 class="hero-title">
+      Votre fret <span class="accent-word">simplifié</span>
+      <span class="line2">Au cœur du Sahel, au service du monde</span>
+    </h1>
+
+    <p class="hero-sub">
+      Posez vos questions sur le cargo, l'achat en Chine, le tracking
+      de colis, les paiements ou les visas. Notre IA répond en temps réel.
+    </p>
+
+    <div class="route-pill">
+      <span class="route-flag">🇨🇳</span>
+      <span>Chine</span>
+      <span class="route-arrow">→</span>
+      <span>Burkina Faso</span>
+      <span class="route-flag">🇧🇫</span>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-num">5<span class="stat-accent">+</span></div>
+        <div class="stat-label">Services</div>
+      </div>
+      <div class="stat-div"></div>
+      <div class="stat-item">
+        <div class="stat-num">24<span class="stat-accent">h</span></div>
+        <div class="stat-label">Disponibilité</div>
+      </div>
+      <div class="stat-div"></div>
+      <div class="stat-item">
+        <div class="stat-num">100<span class="stat-accent">%</span></div>
+        <div class="stat-label">Sécurisé</div>
+      </div>
+    </div>
+
+    <div class="cta-group">
+      <button class="btn-cta btn-cta-primary" onclick="document.body.classList.add('show-chatbot')">
+        💬 Parler à CTEXI-Bot
+      </button>
+      <button class="btn-cta btn-cta-ghost" onclick="document.querySelector('.quick-btn[data-action=services]').click();document.body.classList.add('show-chatbot')">
+        📦 Voir nos services
+      </button>
+    </div>
+
+  </main>
+
+  <!-- SERVICES APERÇU -->
+  <div class="services-preview">
+    <div class="svc-card" onclick="document.body.classList.add('show-chatbot')">
+      <span class="svc-card-icon">🚢</span>
+      <span class="svc-card-name">CARGO</span>
+    </div>
+    <div class="svc-card" onclick="document.body.classList.add('show-chatbot')">
+      <span class="svc-card-icon">🛒</span>
+      <span class="svc-card-name">BUY</span>
+    </div>
+    <div class="svc-card" onclick="document.body.classList.add('show-chatbot')">
+      <span class="svc-card-icon">💳</span>
+      <span class="svc-card-name">PAY</span>
+    </div>
+    <div class="svc-card" onclick="document.body.classList.add('show-chatbot')">
+      <span class="svc-card-icon">✈️</span>
+      <span class="svc-card-name">TRAVEL</span>
+    </div>
+    <div class="svc-card" onclick="document.body.classList.add('show-chatbot')">
+      <span class="svc-card-icon">🎓</span>
+      <span class="svc-card-name">ACADÉMIE</span>
+    </div>
+  </div>
+
+  <!-- OVERLAY -->
+  <div class="chat-overlay" id="chatOverlay"></div>
+
+  <!-- TOGGLE BUTTON -->
+  <button id="chatbot-toggler">
+    <span class="material-symbols-outlined">smart_toy</span>
+    <span class="material-symbols-rounded">close</span>
+  </button>
+
+  <!-- POPUP CHATBOT -->
+  <div class="chatbot-popup">
+
+    <div class="chat-header">
+      <div class="header-info">
+        <div class="chatbot-logo">🤖</div>
+        <div>
+          <h2 class="logo-text">Ctexi-Bot</h2>
+          <div class="header-subtitle">
+            <span class="online-dot"></span>En ligne
+          </div>
+        </div>
+      </div>
+      <button id="close-chatbot" class="material-symbols-rounded">keyboard_arrow_down</button>
+    </div>
+
+    <div class="quick-bar">
+      <button class="quick-btn" data-action="services">📦 Nos services</button>
+      <button class="quick-btn" data-action="suivi_colis">🔍 Suivi colis</button>
+      <button class="quick-btn" data-action="agent">👤 Contacter un agent</button>
+      <button class="quick-btn" data-action="conversion">💱 Conversion</button>
+    </div>
+
+    <div class="chat-body-wrap">
+      <div class="chat-body" id="chatBody">
+        <div class="message bot-message">
+          <div class="bot-avatar-wrap">🤖</div>
+          <div class="message-text">
+            <b>Bonjour {{ user_name }} 👋</b><br>
+            Bienvenue chez <b>CTEXI</b> !<br><br>
+            Je suis <b>CTEXI-BOT</b>, votre assistant dédié au fret Chine → Burkina Faso.<br><br>
+            Posez-moi votre question ou choisissez une option ci-dessus. 😊
+          </div>
+        </div>
+      </div>
+      <button class="scroll-down-btn material-symbols-rounded" id="scrollDownBtn">keyboard_arrow_down</button>
+    </div>
+
+    <div class="chat-footer">
+      <form action="{{ url_for('auth.index') }}" class="chat-form">
+        <textarea placeholder="Posez votre question..." class="message-input" required></textarea>
+        <div class="chat-controls">
+          <button type="button" id="mic-btn" class="material-symbols-rounded">mic</button>
+          <button type="submit" id="send-message" class="material-symbols-rounded">arrow_upward</button>
+        </div>
       </form>
     </div>
 
-    <!-- ======================================================
-    CHAT POPUP
-    ====================================================== -->
-    <div class="chatbot-popup">
+  </div>
 
-      <!-- ================= HEADER ================= -->
-      <div class="chat-header">
-        <div class="header-info">
-          <svg class="chatbot-logo" xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 1024 1024">
-            <path d="M738.3 287.6H285.7c-59 0-106.8 47.8-106.8 106.8v303.1c0 59 47.8 106.8 106.8 106.8h81.5v111.1c0 .7.8 1.1 1.4.7l166.9-110.6 41.8-.8h117.4l43.6-.4c59 0 106.8-47.8 106.8-106.8V394.5c0-59-47.8-106.9-106.8-106.9z"/>
-          </svg>
-          <h2 class="logo-text">Ctexi-Bot</h2>
-        </div>
-        <button id="close-chatbot" class="material-symbols-rounded">keyboard_arrow_down</button>
-      </div>
+  <script>
+    const chatBody      = document.getElementById("chatBody");
+    const messageInput  = document.querySelector(".message-input");
+    const sendBtn       = document.getElementById("send-message");
+    const toggler       = document.getElementById("chatbot-toggler");
+    const closeBtn      = document.getElementById("close-chatbot");
+    const overlay       = document.getElementById("chatOverlay");
+    const scrollDownBtn = document.getElementById("scrollDownBtn");
+    const initialHeight = messageInput.scrollHeight;
+    const userData      = { message: null };
+    const BOT_AVATAR    = `<div class="bot-avatar-wrap">🤖</div>`;
 
-      <!-- ================= QUICK ACTIONS ================= -->
-      <div class="quick-bar">
-        <button class="quick-btn" data-action="services">Decouvrir nos services</button>
-        <button class="quick-btn" data-action="suivi_colis">Suivre colis</button>
-        <button class="quick-btn" data-action="agent">Contacter un agent</button>
-      </div>
+    // Fermer en cliquant sur l'overlay
+    overlay.addEventListener("click", () => document.body.classList.remove("show-chatbot"));
 
-      <!-- ================= CHAT BODY ================= -->
-      <div class="chat-body">
+    // SCROLL
+    let userScrolledUp = false;
+    function isNearBottom(t=80){ return chatBody.scrollHeight-chatBody.scrollTop-chatBody.clientHeight < t }
+    function smartScroll(){ if(!userScrolledUp) chatBody.scrollTo({top:chatBody.scrollHeight,behavior:"smooth"}) }
+    chatBody.addEventListener("scroll",()=>{ userScrolledUp=!isNearBottom(); scrollDownBtn.classList.toggle("visible",userScrolledUp) })
+    scrollDownBtn.addEventListener("click",()=>{ userScrolledUp=false; chatBody.scrollTo({top:chatBody.scrollHeight,behavior:"smooth"}) })
 
-        <div class="message bot-message">
-          <svg class="bot-avatar" xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 1024 1024">
-            <path d="M738.3 287.6H285.7c-59 0-106.8 47.8-106.8 106.8v303.1c0 59 47.8 106.8 106.8 106.8h81.5v111.1c0 .7.8 1.1 1.4.7l166.9-110.6 41.8-.8h117.4l43.6-.4c59 0 106.8-47.8 106.8-106.8V394.5c0-59-47.8-106.9-106.8-106.9z"/>
-          </svg>
+    // MESSAGES
+    function createMsg(content,...cls){
+      const d=document.createElement("div");
+      d.classList.add("message",...cls);
+      if(cls.includes("bot-message")) d.innerHTML=`${BOT_AVATAR}<div class="message-text">${content}</div>`;
+      else d.innerHTML=`<div class="message-text">${content}</div>`;
+      return d;
+    }
+    function createThinking(){
+      const d=document.createElement("div");
+      d.classList.add("message","bot-message","thinking");
+      d.innerHTML=`${BOT_AVATAR}<div class="message-text"><div class="thinking-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+      return d;
+    }
 
-          <div class="message-text">
-            <b> Bonjour {{ user_name }} 👋</b><br>
-            Bienvenue chez <b>CTEXI!</b><br><br>
+    // TYPING
+    function typeHTML(el,html,speed=6){
+      return new Promise(resolve=>{
+        let i=0; el.innerHTML="";
+        const t=setInterval(()=>{ el.innerHTML=html.slice(0,i++); smartScroll(); if(i>html.length){clearInterval(t);resolve()} },speed);
+      });
+    }
 
-            Je suis <b>CTEXI-BOT</b>, votre assistant dédié à l’import/export entre la Chine et le Burkina Faso.<br>
-            Posez-moi votre question ou utilisez les options ci-dessus.
-          </div>
-        </div>
+    // TRACKING CARD
+    function trackCard(d){
+      return `<div class="tracking-card">
+        <div class="tracking-row"><span class="tlabel">📦 Code</span><span>${d.code}</span></div>
+        <div class="tracking-row"><span class="tlabel">🚚 Transport</span><span>${d.transport||d.modes||'—'}</span></div>
+        <div class="tracking-row"><span class="tlabel">📌 Statut</span><span class="tracking-status">${d.statut}</span></div>
+        <div class="tracking-row"><span class="tlabel">📦 Type</span><span>${d.type_colis||'—'}</span></div>
+        <div class="tracking-row"><span class="tlabel">🕒 Mise à jour</span><span>${d.derniere_maj||'—'}</span></div>
+      </div>`;
+    }
 
-      </div>
+    // SERVICES
+    const SVC_META={cargo:{icon:"🚢",desc:"Transport Chine → Afrique"},buy:{icon:"🛒",desc:"Achat & sourcing Chine"},pay:{icon:"💳",desc:"Paiement international"},travel:{icon:"✈️",desc:"Visa & voyages Chine"},academie:{icon:"🎓",desc:"Formations import-export"}};
+    function getSvcMeta(nom){ const k=Object.keys(SVC_META).find(k=>nom.toLowerCase().includes(k)); return SVC_META[k]||{icon:"📌",desc:""} }
 
-      <!-- ================= FOOTER ================= -->
-      <div class="chat-footer">
+    async function showServiceBtns(services){
+      const wrap=document.createElement("div"); wrap.className="service-buttons";
+      const last=[...chatBody.querySelectorAll(".bot-message")].pop();
+      if(last) last.querySelector(".message-text").appendChild(wrap);
+      else chatBody.appendChild(wrap);
+      for(const s of services){
+        const m=getSvcMeta(s.nom_service||"");
+        const b=document.createElement("button"); b.className="service-btn";
+        b.innerHTML=`<span class="svc-icon">${m.icon}</span><span class="svc-name">${s.nom_service}</span><span class="svc-desc">${m.desc}</span>`;
+        b.onclick=()=>fetchService(s.id_service); wrap.appendChild(b); smartScroll(); await delay(120);
+      }
+    }
 
-        <form action="{{url_for('auth.index')}}" class="chat-form">
+    // AGENT
+    async function showAgentBtns(agent){
+      const wrap=document.createElement("div"); wrap.className="agent-contact";
+      const last=[...chatBody.querySelectorAll(".bot-message")].pop();
+      if(last) last.querySelector(".message-text").appendChild(wrap);
+      else chatBody.appendChild(wrap);
+      const defs=[
+        {key:"whatsapp",cls:"whatsapp",icon:"💬",label:"WhatsApp",href:w=>`https://wa.me/${w.replace(/\s/g,'')}`,target:"_blank"},
+        {key:"email",cls:"email",icon:"📧",label:"Email",href:e=>`mailto:${e}`,target:""},
+        {key:"telephone",cls:"tel",icon:"📞",label:"Appeler",href:t=>`tel:${t}`,target:""},
+      ];
+      for(const def of defs){
+        if(!agent[def.key]) continue;
+        const a=document.createElement("a");
+        a.href=def.href(agent[def.key]); a.target=def.target; a.className="agent-btn "+def.cls;
+        a.innerHTML=`<span class="abtn-icon">${def.icon}</span><span class="abtn-text"><span class="abtn-label">${def.label}</span><span class="abtn-val">${agent[def.key]}</span></span>`;
+        wrap.appendChild(a); smartScroll(); await delay(130);
+      }
+    }
 
-          <textarea placeholder="Posez-moi votre question..." class="message-input" required></textarea>
+    // FETCH SERVICE
+    async function fetchService(id){
+      try{
+        const token=localStorage.getItem("token");
+        const res=await fetch(`/api/list/service/${id}`,{headers:{Authorization:`Bearer ${token}`}});
+        const data=await res.json();
+        const msg=createMsg("","bot-message"); chatBody.appendChild(msg);
+        await typeHTML(msg.querySelector(".message-text"),`<strong>${data.nom_service}</strong><br><br>${data.descriptions||''}`);
+      }catch(e){console.error(e)}
+    }
 
-          <div class="chat-controls">
+    // RÉPONSE BOT
+    async function getBotResponse(thinkingEl){
+      const textEl=thinkingEl.querySelector(".message-text");
+      try{
+        const token=localStorage.getItem("token");
+        if(!token){textEl.innerHTML="⚠️ Vous devez être connecté.";return}
+        const res=await fetch("/api/faq/message",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({message:userData.message})});
+        const data=await res.json();
+        if(!res.ok) throw new Error(data.message||"Erreur serveur");
+        thinkingEl.classList.remove("thinking");
+        if(data.type==="service"&&data.services){ await typeHTML(textEl,data.reponse||""); await showServiceBtns(data.services) }
+        else if(data.type==="tracking"&&data.data){ await typeHTML(textEl,(data.reponse||"")+trackCard(data.data)) }
+        else{ await typeHTML(textEl,data.reponse||data.response||"Pas de réponse.") }
+        if(data.agent) await showAgentBtns(data.agent);
+        smartScroll();
+      }catch(err){
+        console.error(err); thinkingEl.classList.remove("thinking");
+        textEl.innerHTML=`<span style="color:var(--red)">⚠️ Erreur serveur. Veuillez réessayer.</span>`;
+      }
+    }
 
-            <button type="button" id="emoji-picker" class="material-symbols-rounded">
-              sentiment_satisfied
-            </button>
+    // ENVOI
+    function sendMessage(e){
+      e.preventDefault();
+      const msg=messageInput.value.trim(); if(!msg) return;
+      userData.message=msg;
+      chatBody.appendChild(createMsg(msg,"user-message"));
+      messageInput.value=""; messageInput.dispatchEvent(new Event("input"));
+      userScrolledUp=false; chatBody.scrollTo({top:chatBody.scrollHeight,behavior:"smooth"});
+      const thinking=createThinking(); chatBody.appendChild(thinking);
+      chatBody.scrollTo({top:chatBody.scrollHeight,behavior:"smooth"});
+      getBotResponse(thinking);
+    }
 
-            <div class="file-upload-wrapper">
-              <input type="file" accept="images/*" id="file-input" hidden>
-              <button type="button" id="file-upload" class="material-symbols-rounded">
-                attach_file
-              </button>
-            </div>
+    function delay(ms){return new Promise(r=>setTimeout(r,ms))}
 
-            <!-- 🎤 MICRO AJOUTÉ -->
-            <button type="button" id="mic-btn" class="material-symbols-rounded">
-              mic
-            </button>
+    // EVENTS
+    messageInput.addEventListener("input",()=>{ messageInput.style.height=`${initialHeight}px`; messageInput.style.height=`${messageInput.scrollHeight}px` });
+    sendBtn.addEventListener("click",sendMessage);
+    messageInput.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey&&window.innerWidth>768){e.preventDefault();sendMessage(e)} });
+    toggler.addEventListener("click",()=>document.body.classList.toggle("show-chatbot"));
+    closeBtn.addEventListener("click",()=>document.body.classList.remove("show-chatbot"));
 
-            <button type="submit" id="send-message" class="material-symbols-rounded">
-              arrow_upward
-            </button>
+    document.querySelectorAll(".quick-btn").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const map={services:"Quels sont vos services ?",suivi_colis:"Je veux suivre mon colis",agent:"Je veux contacter un agent",conversion:"Je veux faire une conversion de devise"};
+        const msg=map[btn.dataset.action]; if(msg){messageInput.value=msg;sendBtn.click()}
+      });
+    });
 
-          </div>
+    window.addEventListener("load",()=>setTimeout(()=>document.body.classList.add("show-chatbot"),1000));
 
-        </form>
-
-      </div>
-
-    </div>
-
-    <!-- ======================================================
-    SCRIPTS
-    ====================================================== -->
-    <script src="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/browser.js"></script>
-    <script src="{{url_for('static', filename='index.js')}}"></script>
-
-  </body>
+    // SPEECH
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    const mic=document.getElementById("mic-btn");
+    if(SR&&mic){
+      const rec=new SR(); rec.lang="fr-FR"; rec.continuous=false; rec.interimResults=false;
+      mic.addEventListener("click",()=>{rec.start();mic.classList.add("listening")});
+      rec.onresult=e=>{messageInput.value=e.results[0][0].transcript;messageInput.dispatchEvent(new Event("input"));setTimeout(()=>sendBtn.click(),300)};
+      rec.onerror=()=>{}; rec.onend=()=>mic.classList.remove("listening");
+    }
+  </script>
+</body>
 </html>

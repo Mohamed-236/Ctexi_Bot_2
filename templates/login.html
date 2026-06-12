@@ -1,88 +1,322 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Connexion | Ctexi Bot</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='/auth.css') }}">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Connexion | Ctexi-Bot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent:       #7C5CFC;
+      --accent-light: #A78BFA;
+      --accent-glow:  rgba(124,92,252,.38);
+      --teal:         #2DD4BF;
+      --red:          #FF6B6B;
+      --green:        #10B981;
+      --text-primary: #EDE8FF;
+      --text-muted:   #6E6B98;
+      --border:       rgba(124,92,252,.22);
+      --border-soft:  rgba(255,255,255,.07);
+      --bg-card:      rgba(255,255,255,.04);
+      --bg-input:     rgba(255,255,255,.05);
+      --hdr-grad:     linear-gradient(135deg,#2E168A 0%,#6643DB 55%,#9B74F8 100%);
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+
+    body {
+      min-height:100vh;font-family:'Nunito',sans-serif;
+      background:#07091C;color:var(--text-primary);
+      display:flex;align-items:center;justify-content:center;
+      overflow:hidden;
+    }
+
+    /* FOND */
+    .bg-scene{position:fixed;inset:0;z-index:0;
+      background:
+        radial-gradient(ellipse at 20% 30%,rgba(124,92,252,.2) 0%,transparent 52%),
+        radial-gradient(ellipse at 80% 70%,rgba(45,212,191,.1) 0%,transparent 48%),
+        #07091C;}
+    .bg-grid{position:fixed;inset:0;z-index:0;
+      background-image:linear-gradient(rgba(124,92,252,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(124,92,252,.05) 1px,transparent 1px);
+      background-size:60px 60px;
+      mask-image:radial-gradient(ellipse at center,black 20%,transparent 75%);}
+    .orb{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;animation:orbFloat 9s ease-in-out infinite}
+    .orb-1{width:500px;height:500px;background:rgba(124,92,252,.1);top:-150px;left:-150px;animation-delay:0s}
+    .orb-2{width:380px;height:380px;background:rgba(45,212,191,.07);bottom:-100px;right:-100px;animation-delay:-5s}
+    @keyframes orbFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,-15px)}}
+
+    /* LAYOUT */
+    .auth-wrap{
+      position:relative;z-index:1;
+      display:flex;align-items:center;justify-content:center;
+      min-height:100vh;width:100%;padding:20px;
+    }
+
+    .auth-card {
+      width:100%;max-width:440px;
+      background:rgba(13,15,42,.8);
+      border:1px solid var(--border);
+      border-radius:24px;
+      padding:44px 40px;
+      backdrop-filter:blur(20px);
+      box-shadow:0 0 0 1px var(--border),0 24px 60px rgba(0,0,0,.6),0 0 100px rgba(124,92,252,.08);
+      animation:cardIn .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+    /* LOGO */
+    .logo-area{text-align:center;margin-bottom:32px}
+
+    .logo-img-wrap {
+      width:80px;height:80px;border-radius:20px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--border-soft);
+      display:flex;align-items:center;justify-content:center;
+      margin:0 auto 16px;
+      font-size:2.2rem;
+      box-shadow:0 8px 24px rgba(0,0,0,.3);
+      overflow:hidden;
+    }
+
+    /* ← remplace l'emoji par <img> quand tu auras le logo */
+    .logo-img-wrap img {
+      width:100%;height:100%;object-fit:cover;
+    }
+
+    .logo-name{
+      font-family:'Sora',sans-serif;font-size:1.4rem;font-weight:700;
+      color:var(--text-primary);letter-spacing:-.4px;margin-bottom:4px;
+    }
+    .logo-name span{color:var(--accent-light)}
+    .logo-tagline{font-size:.75rem;color:var(--text-muted);font-weight:600;letter-spacing:.5px}
+
+    /* TITRE */
+    .auth-title{
+      font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:700;
+      color:var(--text-primary);margin-bottom:6px;letter-spacing:-.4px;
+    }
+    .auth-sub{font-size:.85rem;color:var(--text-muted);margin-bottom:28px;line-height:1.5}
+
+    /* FORM */
+    .input-group{margin-bottom:18px}
+    .input-group label{
+      display:block;font-size:.8rem;font-weight:700;
+      color:var(--text-muted);margin-bottom:7px;letter-spacing:.3px;
+      text-transform:uppercase;
+    }
+
+    .input-wrap{position:relative}
+    .input-icon{
+      position:absolute;left:14px;top:50%;transform:translateY(-50%);
+      font-size:1rem;color:var(--text-muted);pointer-events:none;
+    }
+
+    .input-wrap input {
+      width:100%;padding:13px 16px 13px 42px;
+      background:var(--bg-input);
+      border:1.5px solid var(--border-soft);
+      border-radius:12px;
+      color:var(--text-primary);
+      font-family:'Nunito',sans-serif;font-size:.93rem;font-weight:500;
+      outline:none;
+      transition:border-color .2s,box-shadow .2s,background .2s;
+    }
+    .input-wrap input::placeholder{color:var(--text-muted)}
+    .input-wrap input:focus{
+      border-color:var(--accent);
+      background:rgba(124,92,252,.06);
+      box-shadow:0 0 0 3px rgba(124,92,252,.12);
+    }
+
+    /* toggle mdp */
+    .eye-btn{
+      position:absolute;right:14px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;
+      color:var(--text-muted);font-size:1rem;padding:2px;
+      transition:color .2s;
+    }
+    .eye-btn:hover{color:var(--accent-light)}
+
+    /* SUBMIT */
+    .btn-submit{
+      width:100%;padding:14px;border-radius:13px;border:none;
+      background:linear-gradient(135deg,var(--accent),#5C3FE8);
+      color:#fff;font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700;
+      cursor:pointer;margin-top:8px;
+      box-shadow:0 8px 24px var(--accent-glow);
+      transition:all .25s cubic-bezier(.34,1.56,.64,1);
+      display:flex;align-items:center;justify-content:center;gap:8px;
+    }
+    .btn-submit:hover{transform:translateY(-2px);box-shadow:0 14px 36px var(--accent-glow)}
+    .btn-submit:active{transform:translateY(0)}
+    .btn-submit.loading{opacity:.7;pointer-events:none}
+
+    /* SPINNER */
+    .spinner{
+      width:18px;height:18px;border:2px solid rgba(255,255,255,.3);
+      border-top-color:#fff;border-radius:50%;
+      animation:spin .7s linear infinite;display:none;
+    }
+    .btn-submit.loading .spinner{display:block}
+    .btn-submit.loading .btn-text{display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* SWITCH LINK */
+    .switch{text-align:center;margin-top:22px;font-size:.86rem;color:var(--text-muted)}
+    .switch a{color:var(--accent-light);font-weight:700;text-decoration:none;transition:color .2s}
+    .switch a:hover{color:#fff}
+
+    /* DIVIDER */
+    .divider{
+      display:flex;align-items:center;gap:12px;
+      margin:20px 0;color:var(--text-muted);font-size:.78rem;
+    }
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border-soft)}
+
+    /* TOAST */
+    .toast{
+      position:fixed;bottom:28px;left:50%;
+      transform:translateX(-50%) translateY(20px);
+      padding:12px 22px;border-radius:12px;
+      font-size:.88rem;font-weight:600;
+      font-family:'Nunito',sans-serif;
+      opacity:0;pointer-events:none;
+      transition:all .3s cubic-bezier(.34,1.56,.64,1);
+      z-index:1000;white-space:nowrap;
+      backdrop-filter:blur(12px);
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.success{background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3)}
+    .toast.error{background:rgba(255,107,107,.12);color:var(--red);border:1px solid rgba(255,107,107,.3)}
+
+    /* BACK LINK */
+    .back-link{
+      position:fixed;top:24px;left:28px;z-index:10;
+      display:flex;align-items:center;gap:6px;
+      color:var(--text-muted);font-size:.84rem;font-weight:600;
+      text-decoration:none;transition:color .2s;
+    }
+    .back-link:hover{color:var(--text-primary)}
+
+    @media(max-width:480px){.auth-card{padding:32px 24px;border-radius:20px}}
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
-        <h2>Connexion</h2>
+  <div class="bg-scene"></div>
+  <div class="bg-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
 
-        <form id="login-form">
-    <div class="input-group">
-        <label>Email</label>
-        <input type="email" id="email" required>
+  <a href="/api/auth/" class="back-link">← Retour</a>
+
+  <div class="auth-wrap">
+    <div class="auth-card">
+
+      <!-- LOGO -->
+      <div class="logo-area">
+        <div class="logo-img-wrap">
+          <!-- 
+            Remplace le emoji par ton image :
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Ctexi">
+          -->
+          🤖
+        </div>
+        <div class="logo-name">CTEXI<span>Bot</span></div>
+        <div class="logo-tagline">Chine → Burkina Faso · Fret & Commerce</div>
+      </div>
+
+      <div class="auth-title">Bon retour 👋</div>
+      <div class="auth-sub">Connectez-vous pour accéder à votre assistant IA</div>
+
+      <form id="login-form" autocomplete="on">
+
+        <div class="input-group">
+          <label>Email</label>
+          <div class="input-wrap">
+            <span class="input-icon">📧</span>
+            <input type="email" id="email" placeholder="votre@email.com" required autocomplete="email">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Mot de passe</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="mdp" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" class="eye-btn" id="eyeBtn" aria-label="Voir le mot de passe">👁</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <span class="spinner"></span>
+          <span class="btn-text">🔐 Se connecter</span>
+        </button>
+
+      </form>
+
+      <div class="divider">ou</div>
+
+      <p class="switch">
+        Pas encore de compte ? <a href="{{ url_for('auth.register') }}">Créer un compte</a>
+      </p>
+
     </div>
+  </div>
 
-    <div class="input-group">
-        <label>Mot de passe</label>
-        <input type="password" id="mdp" required>
-    </div>
+  <div class="toast" id="toast"></div>
 
-    <button type="submit">Se connecter</button>
-</form>
-<div id="toast" class="toast"></div>
-<script>
-const loginForm = document.getElementById("login-form");
-const toast = document.getElementById("toast");
+  <script>
+    const form      = document.getElementById("login-form");
+    const toast     = document.getElementById("toast");
+    const submitBtn = document.getElementById("submitBtn");
+    const eyeBtn    = document.getElementById("eyeBtn");
+    const mdpInput  = document.getElementById("mdp");
 
-// fonction toast moderne
-function showToast(message, type="success") {
-    toast.textContent = message;
-    toast.className = "toast show " + type;
+    // Toggle mot de passe
+    eyeBtn.addEventListener("click", () => {
+      const show = mdpInput.type === "password";
+      mdpInput.type = show ? "text" : "password";
+      eyeBtn.textContent = show ? "🙈" : "👁";
+    });
 
-    setTimeout(() => {
-        toast.classList.remove("show");
-    }, 3000);
-}
-
-loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById("email").value.trim();
-    const mdp = document.getElementById("mdp").value.trim();
-
-    if (!email || !mdp) {
-        return showToast("Veuillez remplir tous les champs", "error");
+    function showToast(msg, type = "success") {
+      toast.textContent = msg;
+      toast.className = "toast show " + type;
+      setTimeout(() => toast.classList.remove("show"), 3200);
     }
 
-    try {
-        const response = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ email, mdp })
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const mdp   = document.getElementById("mdp").value.trim();
+      if (!email || !mdp) return showToast("Veuillez remplir tous les champs", "error");
+
+      submitBtn.classList.add("loading");
+
+      try {
+        const res  = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, mdp })
         });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Identifiants incorrects");
 
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Erreur connexion");
+        localStorage.setItem("token",     data.token || "");
+        localStorage.setItem("user_name", data.user?.nom || "");
 
-        // stockage
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user_name", data.user.nom);
-
-        // ✅ toast au lieu de alert
         showToast("Connexion réussie 🎉", "success");
+        setTimeout(() => window.location.href = data.redirect || "/api/auth/chatbot", 1400);
 
-        // redirection douce après 1.5s
-        setTimeout(() => {
-            window.location.href = data.redirect;
-        }, 1500);
-
-    } catch (err) {
-        console.error(err);
+      } catch (err) {
+        submitBtn.classList.remove("loading");
         showToast(err.message, "error");
-    }
-});
-</script>
-
-        <p class="switch">
-            Pas encore inscrit ? <a href="{{ url_for('auth.register') }}">Créer un compte</a>
-        </p>
-    </div>
-</div>
+      }
+    });
+  </script>
 
 </body>
 </html>
