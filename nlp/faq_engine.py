@@ -10,6 +10,13 @@
 #  5.  Score HAUT  (≥ 0.82)         → DB + reformulation Gemini
 #  6.  Score MOYEN (≥ 0.65)         → Gemini vérifie → DB ou LLM
 #  7.  Score BAS   (< 0.65)         → Gemini direct avec historique
+#
+# BUGS CORRIGÉS :
+#  [FIX 1] get_reponse_intention : le cache retournait rows (liste)
+#          au lieu de random.choice(rows)[0] (string) → AttributeError
+#  [FIX 2] reformuler_avec_gemini : normalisation défensive du type
+#          de reponse_brute (list/tuple → str)
+#  [FIX 3] gemini_verifier_intent : même normalisation défensive
 # ==========================================================
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -64,8 +71,8 @@ def get_pool():
         logging.info("[POOL] Connection pool initialisé")
     return _db_pool
 
-def get_conn():        return get_pool().getconn()
-def release_conn(c):   get_pool().putconn(c)
+def get_conn():       return get_pool().getconn()
+def release_conn(c):  get_pool().putconn(c)
 
 # ==========================================================
 # EMBEDDING MODEL + PRÉCHAUFFAGE
@@ -80,9 +87,9 @@ logging.info("[WARMUP] Modèle prêt.")
 # ==========================================================
 # SEUILS
 # ==========================================================
-SEUIL_HAUT    = 0.82   # Très confiant  → DB + reformulation directe
-SEUIL_MOYEN   = 0.65   # Incertain      → Gemini vérifie avant de répondre
-SEUIL_BAS     = 0.50   # Opérations     → seuil bas acceptable pour les ops
+SEUIL_HAUT  = 0.82   # Très confiant  → DB + reformulation directe
+SEUIL_MOYEN = 0.65   # Incertain      → Gemini vérifie avant de répondre
+SEUIL_BAS   = 0.50   # Opérations     → seuil bas acceptable pour les ops
 
 # ==========================================================
 # CACHES
@@ -108,8 +115,7 @@ _ACTION_HANDLER_MAP = {
 }
 
 # ==========================================================
-# LISTES RAPIDES — garde-fou avant d'appeler Gemini
-# Couvrent 90 % des cas sans latence LLM
+# LISTES RAPIDES
 # ==========================================================
 _MOTS_CONFIRMATION = {
     "oui", "yes", "ok", "okay", "d'accord", "daccord",
@@ -133,7 +139,7 @@ _MOTS_ANNULATION = {
 # SESSION CONTEXT
 # ==========================================================
 _SESSION_CONTEXT = {}
-_SESSION_TTL     = 300   # 5 minutes
+_SESSION_TTL     = 300
 
 def set_context(id_user, intent_nom: str):
     _SESSION_CONTEXT[id_user] = {"intent": intent_nom, "ts": time.time()}
@@ -155,9 +161,6 @@ def clear_context(id_user):
 
 # ==========================================================
 # ANALYSE CONTEXTUELLE PAR GEMINI
-#
-# Appelée UNIQUEMENT quand les listes rapides ne suffisent pas.
-# Retourne : 'CONFIRME' | 'ANNULE' | 'DONNEE' | 'NOUVEAU'
 # ==========================================================
 def analyser_intention_contextuelle(message: str, historique: list, intent_contexte: str) -> str:
     derniers  = "".join(h["content"] for h in historique[-4:])
@@ -179,7 +182,6 @@ HISTORIQUE DE LA CONVERSATION :
 {hist_str}
 
 NOUVEAU MESSAGE DE L'UTILISATEUR : "{message}"
-
 CONTEXTE ACTIF : le bot attend une réponse liée à "{intent_contexte}"
 
 Réponds UNIQUEMENT par un de ces 4 mots (sans explication) :
@@ -188,14 +190,6 @@ Réponds UNIQUEMENT par un de ces 4 mots (sans explication) :
 - DONNEE    → l'utilisateur fournit une information attendue (code colis, montant, ville...)
 - NOUVEAU   → question sans lien avec le contexte actif
 
-Exemples :
-- Bot a proposé un agent, user dit "oui" → CONFIRME
-- Bot a demandé un code colis, user envoie "CTX10001" → DONNEE
-- User dit "non merci" → ANNULE
-- User dit "combien coûte un visa ?" → NOUVEAU
-- User dit "pourquoi pas" → CONFIRME
-- User dit "ça va merci" → ANNULE
-
 RÉPONSE (1 seul mot) :"""
 
     try:
@@ -203,14 +197,14 @@ RÉPONSE (1 seul mot) :"""
         if resp and resp.text:
             decision = resp.text.strip().upper().split()[0]
             if decision not in ("CONFIRME", "ANNULE", "DONNEE", "NOUVEAU"):
-                decision = "DONNEE"   # fallback sûr : tenter l'opération
+                decision = "DONNEE"
             _context_llm_cache[cache_key] = decision
             logging.info(f"[CONTEXT LLM] msg='{message[:40]}' ctx={intent_contexte} → {decision}")
             return decision
     except Exception as e:
         logging.error(f"[CONTEXT LLM ERROR] {e}")
 
-    return "DONNEE"   # en cas d'erreur Gemini : tenter l'opération quand même
+    return "DONNEE"
 
 # ==========================================================
 # PARSER EMBEDDING
@@ -265,12 +259,6 @@ def encode_avec_cache(message: str):
 
 # ==========================================================
 # DETECTION INTENTION
-#
-# Retourne :
-#   - le meilleur intent (best_*)
-#   - top3_exemples  : top-3 exemples bruts (pour gemini_verifier_intent)
-#   - top_candidats  : top-5 intents DISTINCTS dédoublonnés
-#                      → permet de retenter si le 1er est rejeté
 # ==========================================================
 def detecter_intention(message: str):
     charger_intents()
@@ -282,7 +270,6 @@ def detecter_intention(message: str):
     best_score = float(scores[best_index])
     best       = CACHE_INTENTS[best_index]
 
-    # top-3 exemples bruts (pour gemini_verifier_intent)
     top3_idx = np.argsort(scores)[::-1][:3]
     top3_exemples = [
         {
@@ -293,11 +280,8 @@ def detecter_intention(message: str):
         for i in top3_idx
     ]
 
-    # Top-5 intents DISTINCTS dédoublonnés par score max par intent
-    # → on garde le meilleur exemple de chaque intent_nom unique
-    vus       = {}
-    sorted_idx = np.argsort(scores)[::-1]
-    for i in sorted_idx:
+    vus = {}
+    for i in np.argsort(scores)[::-1]:
         nom = CACHE_INTENTS[i]["intent_nom"]
         if nom not in vus:
             vus[nom] = {
@@ -317,7 +301,6 @@ def detecter_intention(message: str):
         f"[INTENT] nom={best['intent_nom']} sous={best['sous_intent']} "
         f"score={best_score:.3f} type={best['type_intent']}"
     )
-    # Log des candidats alternatifs pour debug
     if len(top_candidats) > 1:
         alts = " | ".join(
             f"{c['intent_nom']}({c['score']:.3f})" for c in top_candidats[1:]
@@ -331,9 +314,17 @@ def detecter_intention(message: str):
     )
 
 # ==========================================================
-# VÉRIFICATION GEMINI (intent embedding correct ?)
+# VÉRIFICATION GEMINI
 # ==========================================================
-def gemini_verifier_intent(message: str, intent_nom: str, reponse_candidate: str, top3: list) -> bool:
+def gemini_verifier_intent(message: str, intent_nom: str, reponse_candidate, top3: list) -> bool:
+    # ── [FIX 3] normalisation défensive ──────────────────────
+    if isinstance(reponse_candidate, (list, tuple)):
+        reponse_candidate = reponse_candidate[0] if reponse_candidate else ""
+        if isinstance(reponse_candidate, (list, tuple)):
+            reponse_candidate = reponse_candidate[0] if reponse_candidate else ""
+    reponse_candidate = str(reponse_candidate) if reponse_candidate else ""
+    # ─────────────────────────────────────────────────────────
+
     cache_key = hashlib.md5(f"{message}:{intent_nom}".encode()).hexdigest()
     if cache_key in _verify_cache:
         return _verify_cache[cache_key]
@@ -361,15 +352,10 @@ Réponds UNIQUEMENT par OUI ou NON."""
             return is_valid
     except Exception as e:
         logging.error(f"[VERIFY ERROR] {e}")
-    return True   # en cas d'erreur : laisser passer
+    return True
 
 # ==========================================================
 # SÉLECTION GEMINI parmi les candidats
-#
-# Appelée quand le 1er intent est rejeté par gemini_verifier_intent.
-# Gemini choisit le meilleur intent parmi les candidats restants,
-# ou répond "AUCUN" si aucun ne convient.
-# Retourne le dict candidat choisi, ou None.
 # ==========================================================
 def gemini_choisir_meilleur_intent(message: str, candidats: list) -> dict | None:
     if not candidats:
@@ -396,8 +382,7 @@ INTENTIONS CANDIDATES :
 {liste_str}
 
 Quelle intention correspond le mieux à la question ?
-Réponds UNIQUEMENT avec le nom exact de l'intention (ex: delai_livraison)
-ou "AUCUN" si aucune ne convient vraiment."""
+Réponds UNIQUEMENT avec le nom exact de l'intention ou "AUCUN"."""
 
     try:
         resp = gemini_model.generate_content(prompt)
@@ -407,13 +392,11 @@ ou "AUCUN" si aucune ne convient vraiment."""
                 _verify_cache[cache_key] = "AUCUN"
                 logging.info(f"[CHOOSE] → AUCUN pour '{message[:40]}'")
                 return None
-            # Recherche exacte insensible à la casse
             for c in candidats:
                 if c["intent_nom"].upper() == choix:
                     _verify_cache[cache_key] = c["intent_nom"]
                     logging.info(f"[CHOOSE] → {c['intent_nom']} score={c['score']:.3f}")
                     return c
-            # Recherche partielle si Gemini a reformulé légèrement
             for c in candidats:
                 if c["intent_nom"].upper() in choix or choix in c["intent_nom"].upper():
                     _verify_cache[cache_key] = c["intent_nom"]
@@ -425,12 +408,30 @@ ou "AUCUN" si aucune ne convient vraiment."""
     return None
 
 # ==========================================================
-# GET REPONSE DB
+# [FIX 1] GET REPONSE DB
+#
+# AVANT (bugué) :
+#   cache hit  → return _reponse_cache[key]   ← retournait rows (liste) ✗
+#   cache miss → return random.choice(rows)[0] ← retournait string ✓
+#
+# APRÈS (corrigé) :
+#   cache hit  → rows = cache[key]
+#                return random.choice(rows)[0]  ← toujours string ✓
+#   cache miss → rows = DB query
+#                cache[key] = rows              ← on garde les rows pour la variété
+#                return random.choice(rows)[0]  ← toujours string ✓
 # ==========================================================
 def get_reponse_intention(id_intent: int, sous_intent: str):
     cache_key = f"{id_intent}:{sous_intent}"
+
     if cache_key in _reponse_cache:
-        return _reponse_cache[cache_key]
+        logging.info("[CACHE] réponse DB hit")
+        rows = _reponse_cache[cache_key]
+        # ── [FIX 1] on applique random.choice ici aussi ──────
+        if not rows:
+            return None
+        return random.choice(rows)[0]
+        # ─────────────────────────────────────────────────────
 
     conn = get_conn()
     try:
@@ -442,7 +443,7 @@ def get_reponse_intention(id_intent: int, sous_intent: str):
         """, (id_intent, sous_intent))
         rows = cur.fetchall()
         cur.close()
-        _reponse_cache[cache_key] = rows
+        _reponse_cache[cache_key] = rows  # on cache les rows (liste de tuples)
     finally:
         release_conn(conn)
 
@@ -541,15 +542,13 @@ Réponds UNIQUEMENT par OUI ou NON."""
             return is_valid
     except Exception as e:
         logging.error(f"[DOMAIN ERROR] {e}")
-    return True   # en cas d'erreur : laisser passer
+    return True
 
 def reponse_hors_domaine_llm(message: str) -> str:
-    prompt = f"""
-    
-    Tu es CTEXI-BOT l'assistant de Ctexi. L'utilisateur pose une question hors domaine : "{message}"
-    Explique poliment que tu n'as pas été formé dans ce domaine, tu es spécialisé dans le fret maritime et aérien de CTEXI uniquement.
-    Propose : Ctexi Buy, Ctexi Travel, Ctexi Pay, Ctexi Cargo, Ctexi Académie.
-    2 phrases max, chaleureux, emojis modérés. Même langue."""
+    prompt = f"""Tu es CTEXI-BOT l'assistant de Ctexi. L'utilisateur pose une question hors domaine : "{message}"
+Explique poliment que tu n'as pas été formé dans ce domaine, tu es spécialisé dans le fret maritime et aérien de CTEXI uniquement.
+Propose : Ctexi Buy, Ctexi Travel, Ctexi Pay, Ctexi Cargo, Ctexi Académie.
+2 phrases max, chaleureux, emojis modérés. Même langue."""
     try:
         resp = gemini_model.generate_content(prompt)
         if resp and resp.text:
@@ -576,30 +575,49 @@ def formatter_operation_avec_llm(type_operation: str, message: str) -> str:
         logging.error(f"[FORMATTER ERROR] {e}")
     return markdown.markdown(message)
 
-def reformuler_avec_gemini(message_user: str, reponse_brute: str, history=None) -> str:
+# ==========================================================
+# [FIX 2] REFORMULATION GEMINI
+#
+# Ajout d'une normalisation défensive en tête de fonction.
+# Accepte maintenant str | list | tuple sans crasher.
+# ==========================================================
+def reformuler_avec_gemini(message_user: str, reponse_brute, history=None) -> str:
+
+    # ── [FIX 2] normalisation défensive du type ───────────────
+    if isinstance(reponse_brute, (list, tuple)):
+        reponse_brute = reponse_brute[0] if reponse_brute else ""
+    if isinstance(reponse_brute, (list, tuple)):   # double imbrication possible
+        reponse_brute = reponse_brute[0] if reponse_brute else ""
+    reponse_brute = str(reponse_brute).strip() if reponse_brute is not None else ""
+
+    if not reponse_brute:
+        logging.warning("[REFORMULATION] reponse_brute vide après normalisation")
+        return markdown.markdown("Je n'ai pas pu trouver une réponse précise. Puis-je vous aider autrement ?")
+    # ─────────────────────────────────────────────────────────
+
     if len(reponse_brute.split()) <= 8:
+        logging.info("[OPT] reformulation court-circuitée (réponse courte)")
         return markdown.markdown(reponse_brute)
+
     historique = ""
     if history:
         for item in history[-4:]:
             historique += f"{item['role']}: {item['content']}\n"
-    prompt = f"""
-    
-Tu es CTEXI-BOT l'agent officiel de Ctexi(Cherif trans Exert international une entreprise evoluant dans le domaine de 
-(fret maritime et aerien de la  Chine → Burkina Faso).
+
+    prompt = f"""Tu es CTEXI-BOT l'agent officiel de Ctexi (Cherif Trans Expert International —
+fret maritime et aérien Chine → Burkina Faso).
+
 HISTORIQUE : {historique}
 QUESTION : {message_user}
 RÉPONSE BRUTE : {reponse_brute}
-- Améliore le style de la réponse brute sans en changer le sens.
-- utilise des liste a puce ou numerotation leger si la reponse est longue et doit etre structurer
-- Utilise des stickers si possible
-- Garde exactement le même sens. Style naturel, chaleureux, emojis modérés.
-- INTERDIT : inventer prix/délais. Même langue. Retourne uniquement la réponse finale.
-- Pas trop de phrase inutile sois bref, pour des choses simple maximum 3 a 4 ligne
-- A la fin fait toujours une proposition a l'utilisateur pour rendre la conversation interessant
 
+- Améliore le style sans changer le sens.
+- Utilise des listes à puces si la réponse est longue.
+- Emojis modérés. Même langue. Sois bref (3-4 lignes max pour les réponses simples).
+- INTERDIT : inventer prix/délais.
+- Termine toujours par une proposition à l'utilisateur.
 
-"""
+Retourne uniquement la réponse finale."""
     try:
         resp = gemini_model.generate_content(prompt)
         if resp and resp.text:
@@ -614,18 +632,18 @@ def gemini_direct_answer(message: str, history=None) -> str:
         for item in history[-6:]:
             role = "Bot" if item["role"] == "assistant" else "Utilisateur"
             historique += f"{role}: {item['content']}\n"
-    prompt = f"""
-                    
-                Tu es CTEXI-BOT, agent officiel de CTEXI(cherif trans expert international: devise -> au couer du sahel, au service du monde) une entreprise de (fret maritime et aérien Chine → Burkina Faso).
-                Services : Cargo, Buy (achat et sourcing), Pay (paiement RMB), Travel (visa et réservation d'hôtel), Académie (formations sourcing et achat en Chine).
-                HISTORIQUE COMPLET :{historique}
+    prompt = f"""Tu es CTEXI-BOT, agent officiel de CTEXI (Cherif Trans Expert International —
+devise : Au cœur du Sahel, au service du monde).
+Services : Cargo, Buy (achat et sourcing), Pay (paiement RMB),
+Travel (visa et réservation d'hôtel), Académie (formations sourcing et achat en Chine).
 
-                RÈGLES : ton professionnel et chaleureux. N'invente jamais prix/délais.
-                Si inconnu → invite à contacter un agent en cliqaunt sur le bouton contacter un agent puis en choisissant un moyen de contact. Même langue. Tiens compte de l'historique.
+HISTORIQUE : {historique}
 
-                NOUVEAU MESSAGE : {message}
-                RÉPONSE :
-"""
+RÈGLES : ton professionnel et chaleureux. N'invente jamais prix/délais.
+Si inconnu → invite à contacter un agent. Même langue. Tiens compte de l'historique.
+
+NOUVEAU MESSAGE : {message}
+RÉPONSE :"""
     try:
         resp = gemini_model.generate_content(prompt)
         if resp and resp.text:
@@ -636,7 +654,6 @@ def gemini_direct_answer(message: str, history=None) -> str:
 
 # ==========================================================
 # OPÉRATIONS
-# Source unique — fuzzy, embedding ET contexte utilisent cette fonction
 # ==========================================================
 def gerer_operations_par_nom(intent_nom: str, message: str, id_user) -> dict | None:
     action_handler = _ACTION_HANDLER_MAP.get(intent_nom)
@@ -734,21 +751,10 @@ def trouver_meilleure_correspondance(message: str, id_user):
     message          = nettoyer_message(message)
     msg_lower        = message.strip().lower().rstrip("!?.,;:")
 
-    # Historique chargé en parallèle dès le départ
     future_history = _executor.submit(get_conversation_history, id_user, 8)
 
     # --------------------------------------------------
     # ÉTAPE 1 — CONTEXTE OPÉRATIONNEL ACTIF
-    #
-    # Ordre de priorité :
-    #   a) Annulation explicite  → listes rapides (0 ms)
-    #   b) Confirmation explicite → listes rapides (0 ms)
-    #   c) Cas ambigu            → Gemini analyse (seul appel LLM ici)
-    #   d) Tout le reste         → traité comme donnée attendue
-    #
-    # IMPORTANT : pas de CAS B (messages courts → Gemini direct)
-    # Les opérations comme "CTX10001" ou "100 euros" sont courtes
-    # et doivent atteindre gerer_operations_par_nom sans détour.
     # --------------------------------------------------
     ctx = get_context(id_user)
     if ctx:
@@ -764,7 +770,7 @@ def trouver_meilleure_correspondance(message: str, id_user):
             return {"type": "annulation", "reponse": reponse,
                     "debug": {"source": "annulation_liste", "intent": ctx}}
 
-        # b) Confirmation rapide → relancer l'opération
+        # b) Confirmation rapide
         if msg_lower in _MOTS_CONFIRMATION:
             logging.info(f"[SOURCE] CONFIRMATION rapide ctx={ctx}")
             op = gerer_operations_par_nom(ctx, message, id_user)
@@ -774,8 +780,6 @@ def trouver_meilleure_correspondance(message: str, id_user):
                 return op
 
         # c) Cas ambigu → Gemini décide
-        #    (messages ni dans les listes de confirmation/annulation,
-        #     ni clairement des données comme un code ou un montant)
         history_for_ctx = future_history.result()
         decision = analyser_intention_contextuelle(message, history_for_ctx, ctx)
         logging.info(f"[CONTEXTE LLM] ctx={ctx} decision={decision}")
@@ -797,15 +801,12 @@ def trouver_meilleure_correspondance(message: str, id_user):
                 op["debug"] = {"source": f"contexte_llm:{ctx}", "decision": decision}
                 return op
 
-        # NOUVEAU → contexte effacé, on continue le pipeline normal
         if decision == "NOUVEAU":
             clear_context(id_user)
             logging.info("[CONTEXTE LLM] Nouvelle question → contexte effacé, pipeline normal")
 
     # --------------------------------------------------
     # ÉTAPE 2 — VÉRIFICATION DOMAINE
-    # Placée après le contexte pour ne jamais bloquer
-    # une donnée attendue (code colis, montant…)
     # --------------------------------------------------
     if not verifier_domaine_llm(message):
         reponse = reponse_hors_domaine_llm(message)
@@ -828,14 +829,14 @@ def trouver_meilleure_correspondance(message: str, id_user):
         return op
 
     # --------------------------------------------------
-    # ÉTAPE 4-7 — EMBEDDING + PIPELINE HYBRIDE
+    # ÉTAPES 4-7 — EMBEDDING + PIPELINE HYBRIDE
     # --------------------------------------------------
     id_intent, intent_nom, sous_intent, score, type_intent, action_handler, \
         top3_exemples, top_candidats = detecter_intention(message)
 
     logging.info(f"[SCORE] intent={intent_nom} score={score:.3f} type={type_intent}")
 
-    # ÉTAPE 4 — Opération détectée par embedding
+    # ÉTAPE 4 — Opération via embedding
     if type_intent == "operation" and score >= SEUIL_BAS:
         op = gerer_operations_par_nom(intent_nom, message, id_user)
         if op:
@@ -844,10 +845,9 @@ def trouver_meilleure_correspondance(message: str, id_user):
             logging.info(f"[SOURCE] OPERATION EMBEDDING type={op['type']} score={score:.3f}")
             return op
 
-    # Récupération de l'historique si pas encore fait (ctx=None)
     history = future_history.result()
 
-    # ÉTAPE 5 — Score HAUT → DB + reformulation directe (confiance maximale, pas de vérif)
+    # ÉTAPE 5 — Score HAUT → DB + reformulation directe
     if score >= SEUIL_HAUT:
         reponse_brute = get_reponse_intention(id_intent, sous_intent)
         if reponse_brute:
@@ -862,14 +862,11 @@ def trouver_meilleure_correspondance(message: str, id_user):
             return {"type": "intent", "reponse": reponse_finale, "confidence": float(score),
                     "debug": {"source": "db_haut_score", "intent": intent_nom, "score": score}}
 
-    # ÉTAPE 6 — Score MOYEN → Gemini vérifie le 1er intent
-    #           Si rejeté → Gemini choisit parmi les autres candidats
-    #           Si toujours rien → LLM direct
+    # ÉTAPE 6 — Score MOYEN → Gemini vérifie
     if score >= SEUIL_MOYEN:
         reponse_brute = get_reponse_intention(id_intent, sous_intent)
         if reponse_brute:
             if gemini_verifier_intent(message, intent_nom, reponse_brute, top3_exemples):
-                # 1er intent validé
                 reponse_finale = reformuler_avec_gemini(message, reponse_brute, history)
                 sauvegarder_conversation_async(
                     id_user=id_user, message_user=message_original,
@@ -881,8 +878,8 @@ def trouver_meilleure_correspondance(message: str, id_user):
                 return {"type": "intent", "reponse": reponse_finale, "confidence": float(score),
                         "debug": {"source": "db_verifie", "intent": intent_nom, "score": score}}
 
-            # 1er intent rejeté → on tente les candidats suivants (intents distincts)
-            logging.info(f"[RETRY] intent '{intent_nom}' rejeté → tentative sur {len(top_candidats)-1} candidats alternatifs")
+            # 1er intent rejeté → candidats alternatifs
+            logging.info(f"[RETRY] '{intent_nom}' rejeté → {len(top_candidats)-1} candidats alternatifs")
             candidats_alternatifs = [c for c in top_candidats[1:] if c["score"] >= SEUIL_MOYEN - 0.10]
 
             if candidats_alternatifs:
@@ -906,9 +903,9 @@ def trouver_meilleure_correspondance(message: str, id_user):
                                           "intent": meilleur["intent_nom"],
                                           "score": meilleur["score"]}}
 
-            logging.info(f"[RETRY] aucun candidat alternatif valide → LLM direct")
+            logging.info("[RETRY] aucun candidat alternatif valide → LLM direct")
 
-    # ÉTAPE 7 — Score BAS ou tous les intents rejetés → Gemini direct avec historique
+    # ÉTAPE 7 — Score BAS ou tous rejetés → Gemini direct
     reponse_finale = gemini_direct_answer(message, history)
     sauvegarder_conversation_async(
         id_user=id_user, message_user=message_original,
