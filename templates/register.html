@@ -1,78 +1,402 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Inscription | Ctexi Bot</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='/auth.css') }}">
-    <style>
-        /* Formulaire en grille 2 colonnes */
-        form.form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr; /* deux colonnes égales */
-            gap: 15px;
-        }
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inscription | Ctexi-Bot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent:       #7C5CFC;
+      --accent-light: #A78BFA;
+      --accent-glow:  rgba(124,92,252,.38);
+      --green:        #10B981;
+      --red:          #FF6B6B;
+      --text-primary: #EDE8FF;
+      --text-muted:   #6E6B98;
+      --border:       rgba(124,92,252,.22);
+      --border-soft:  rgba(255,255,255,.07);
+      --bg-input:     rgba(255,255,255,.05);
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
 
-        .input-group {
-            display: flex;
-            flex-direction: column;
-        }
+    body{
+      min-height:100vh;font-family:'Nunito',sans-serif;
+      background:#07091C;color:var(--text-primary);
+      display:flex;align-items:center;justify-content:center;
+      padding:12px;overflow:hidden;
+    }
 
-        /* Pour les champs qui doivent prendre toute la largeur */
-        .full-width {
-            grid-column: 1 / -1;
-        }
+    .bg-scene{position:fixed;inset:0;z-index:0;
+      background:
+        radial-gradient(ellipse at 20% 30%,rgba(124,92,252,.2) 0%,transparent 52%),
+        radial-gradient(ellipse at 80% 70%,rgba(45,212,191,.1) 0%,transparent 48%),
+        #07091C;}
+    .bg-grid{position:fixed;inset:0;z-index:0;
+      background-image:linear-gradient(rgba(124,92,252,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(124,92,252,.05) 1px,transparent 1px);
+      background-size:60px 60px;
+      mask-image:radial-gradient(ellipse at center,black 20%,transparent 75%);}
+    .orb{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;animation:orbFloat 9s ease-in-out infinite}
+    .orb-1{width:500px;height:500px;background:rgba(124,92,252,.1);top:-150px;left:-150px}
+    .orb-2{width:380px;height:380px;background:rgba(45,212,191,.07);bottom:-100px;right:-100px;animation-delay:-5s}
+    @keyframes orbFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,-15px)}}
 
-        button.full-width {
-            grid-column: 1 / -1;
-            padding: 10px;
-            font-size: 1rem;
-        }
-    </style>
+    .back-link{
+      position:fixed;top:16px;left:20px;z-index:10;
+      display:flex;align-items:center;gap:5px;
+      color:var(--text-muted);font-size:.8rem;font-weight:600;
+      text-decoration:none;transition:color .2s;
+    }
+    .back-link:hover{color:var(--text-primary)}
+
+    .auth-wrap{
+      position:relative;z-index:1;
+      display:flex;align-items:center;justify-content:center;
+      min-height:100vh;width:100%;
+    }
+
+    /* ── CARTE — hauteur maîtrisée ── */
+    .auth-card{
+      width:100%;max-width:460px;
+      background:rgba(13,15,42,.85);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:18px 26px;           /* padding minimal */
+      backdrop-filter:blur(20px);
+      box-shadow:0 0 0 1px var(--border),0 24px 60px rgba(0,0,0,.6);
+      animation:cardIn .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+
+    /* ── LOGO HORIZONTAL (économise de la hauteur) ── */
+    .logo-area{
+      display:flex;align-items:center;gap:10px;
+      margin-bottom:12px;
+    }
+    .logo-img-wrap{
+      width:40px;height:40px;border-radius:11px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--border-soft);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.3rem;flex-shrink:0;
+      box-shadow:0 4px 14px rgba(0,0,0,.3);
+      overflow:hidden;
+    }
+    .logo-img-wrap img{width:100%;height:100%;object-fit:cover}
+    .logo-texts{}
+    .logo-name{font-family:'Sora',sans-serif;font-size:1rem;font-weight:700;color:var(--text-primary);letter-spacing:-.3px;line-height:1.1}
+    .logo-name span{color:var(--accent-light)}
+    .logo-tagline{font-size:.62rem;color:var(--text-muted);font-weight:600;letter-spacing:.4px}
+
+    /* ── TITRE ── */
+    .auth-title{font-family:'Sora',sans-serif;font-size:1.08rem;font-weight:700;color:var(--text-primary);margin-bottom:1px;letter-spacing:-.3px}
+    .auth-sub{font-size:.74rem;color:var(--text-muted);margin-bottom:10px;line-height:1.4}
+
+    /* ── STEPS ── */
+    .steps{display:flex;align-items:center;margin-bottom:10px}
+    .step{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;position:relative}
+    .step:not(:last-child)::after{
+      content:'';position:absolute;top:10px;left:50%;
+      width:100%;height:1px;background:var(--border-soft);z-index:0;
+    }
+    .step.done:not(:last-child)::after{background:var(--accent)}
+    .step-dot{
+      width:20px;height:20px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:.65rem;font-weight:700;
+      border:1.5px solid var(--border-soft);
+      background:rgba(255,255,255,.04);
+      color:var(--text-muted);position:relative;z-index:1;
+      transition:all .3s ease;
+    }
+    .step.active .step-dot{background:linear-gradient(135deg,var(--accent),#5C3FE8);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px var(--accent-glow)}
+    .step.done .step-dot{background:var(--green);border-color:var(--green);color:#fff}
+    .step-label{font-size:.58rem;color:var(--text-muted);font-weight:700;letter-spacing:.2px}
+    .step.active .step-label{color:var(--accent-light)}
+    .step.done .step-label{color:var(--green)}
+
+    /* ── FORM GRID ── */
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .input-group{display:flex;flex-direction:column}
+    .full-width{grid-column:1/-1}
+
+    .input-group label{
+      display:block;font-size:.68rem;font-weight:700;
+      color:var(--text-muted);margin-bottom:4px;
+      letter-spacing:.3px;text-transform:uppercase;
+    }
+
+    .input-wrap{position:relative}
+    .input-icon{
+      position:absolute;left:10px;top:50%;transform:translateY(-50%);
+      font-size:.82rem;color:var(--text-muted);pointer-events:none;
+    }
+    .input-wrap input{
+      width:100%;padding:8px 12px 8px 33px;   /* inputs très compacts */
+      background:var(--bg-input);
+      border:1.5px solid var(--border-soft);
+      border-radius:9px;
+      color:var(--text-primary);
+      font-family:'Nunito',sans-serif;font-size:.84rem;font-weight:500;
+      outline:none;
+      transition:border-color .2s,box-shadow .2s,background .2s;
+    }
+    .input-wrap input::placeholder{color:var(--text-muted)}
+    .input-wrap input:focus{border-color:var(--accent);background:rgba(124,92,252,.06);box-shadow:0 0 0 3px rgba(124,92,252,.12)}
+    .input-wrap input.valid{border-color:var(--green)}
+    .input-wrap input.invalid{border-color:var(--red)}
+
+    .eye-btn{
+      position:absolute;right:10px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;
+      color:var(--text-muted);font-size:.85rem;transition:color .2s;
+    }
+    .eye-btn:hover{color:var(--accent-light)}
+    #mdp-input{padding-right:34px}
+
+    /* Barre force MDP — très fine */
+    .strength-wrap{margin-top:4px}
+    .strength-bar{height:2px;border-radius:4px;background:var(--border-soft);overflow:hidden;margin-bottom:3px}
+    .strength-fill{height:100%;border-radius:4px;width:0;transition:width .4s ease,background .4s ease}
+    .strength-label{font-size:.64rem;color:var(--text-muted);font-weight:600}
+
+    /* Terms */
+    .terms{
+      grid-column:1/-1;
+      display:flex;align-items:flex-start;gap:7px;
+      font-size:.72rem;color:var(--text-muted);line-height:1.4;
+    }
+    .terms input[type=checkbox]{margin-top:2px;accent-color:var(--accent);width:13px;height:13px;flex-shrink:0;cursor:pointer}
+    .terms a{color:var(--accent-light);text-decoration:none}
+    .terms a:hover{color:#fff}
+
+    /* Submit */
+    .btn-submit{
+      grid-column:1/-1;
+      width:100%;padding:10px;border-radius:11px;border:none;
+      background:linear-gradient(135deg,var(--accent),#5C3FE8);
+      color:#fff;font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;
+      cursor:pointer;margin-top:1px;
+      box-shadow:0 6px 20px var(--accent-glow);
+      transition:all .25s cubic-bezier(.34,1.56,.64,1);
+      display:flex;align-items:center;justify-content:center;gap:7px;
+    }
+    .btn-submit:hover{transform:translateY(-2px);box-shadow:0 12px 30px var(--accent-glow)}
+    .btn-submit.loading{opacity:.7;pointer-events:none}
+
+    .spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+    .btn-submit.loading .spinner{display:block}
+    .btn-submit.loading .btn-text{display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Switch & divider */
+    .switch{text-align:center;margin-top:8px;font-size:.8rem;color:var(--text-muted);grid-column:1/-1}
+    .switch a{color:var(--accent-light);font-weight:700;text-decoration:none;transition:color .2s}
+    .switch a:hover{color:#fff}
+    .divider{display:flex;align-items:center;gap:8px;margin:1px 0;color:var(--text-muted);font-size:.72rem;grid-column:1/-1}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border-soft)}
+
+    /* Toast */
+    .toast{
+      position:fixed;bottom:22px;left:50%;
+      transform:translateX(-50%) translateY(20px);
+      padding:10px 20px;border-radius:12px;
+      font-size:.84rem;font-weight:600;
+      font-family:'Nunito',sans-serif;
+      opacity:0;pointer-events:none;
+      transition:all .3s cubic-bezier(.34,1.56,.64,1);
+      z-index:1000;white-space:nowrap;backdrop-filter:blur(12px);
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.success{background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3)}
+    .toast.error{background:rgba(255,107,107,.12);color:var(--red);border:1px solid rgba(255,107,107,.3)}
+
+    @media(max-width:540px){
+      .auth-card{padding:16px 16px;border-radius:16px}
+      .form-grid{grid-template-columns:1fr}
+      .full-width,.btn-submit,.divider,.terms,.switch{grid-column:1}
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
-        <h2>Inscription</h2>
+  <div class="bg-scene"></div>
+  <div class="bg-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
 
-        <form method="POST" action="{{url_for('auth.register')}}" class="form-grid">
-            <!-- Ligne 1 : Nom et Prénom -->
-            <div class="input-group">
-                <label>Nom</label>
-                <input type="text" name="nom" required>
-            </div>
+  <a href="/api/auth/" class="back-link">← Retour</a>
 
-            <div class="input-group">
-                <label>Prénom</label>
-                <input type="text" name="prenom" required>
-            </div>
+  <div class="auth-wrap">
+    <div class="auth-card">
 
-            <!-- Ligne 2 : Email et Téléphone -->
-            <div class="input-group">
-                <label>Email</label>
-                <input type="email" name="email" required>
-            </div>
+      <!-- LOGO HORIZONTAL -->
+      <div class="logo-area">
+        <div class="logo-img-wrap">🤖</div>
+        <div class="logo-texts">
+          <div class="logo-name">CTEXI<span>Bot</span></div>
+          <div class="logo-tagline">Chine → Burkina Faso · Fret & Commerce</div>
+        </div>
+      </div>
 
-            <div class="input-group">
-                <label>Téléphone</label>
-                <input type="tel" name="telephone" required>
-            </div>
+      <div class="auth-title">Créer un compte ✨</div>
+      <div class="auth-sub">Rejoignez CTEXI et accédez à votre assistant IA</div>
 
-            <!-- Ligne 3 : Mot de passe (pleine largeur) -->
-            <div class="input-group full-width">
-                <label>Mot de passe</label>
-                <input type="password" name="mdp" required>
-            </div>
+      <!-- STEPS -->
+      <div class="steps" id="stepsBar">
+        <div class="step active" id="step1">
+          <div class="step-dot">1</div>
+          <div class="step-label">Identité</div>
+        </div>
+        <div class="step" id="step2">
+          <div class="step-dot">2</div>
+          <div class="step-label">Contact</div>
+        </div>
+        <div class="step" id="step3">
+          <div class="step-dot">3</div>
+          <div class="step-label">Sécurité</div>
+        </div>
+      </div>
 
-            <!-- Bouton (pleine largeur) -->
-            <button type="submit" class="full-width">S'inscrire</button>
-        </form>
+      <form method="POST" action="{{ url_for('auth.register') }}" class="form-grid" id="reg-form">
+
+        <div class="input-group">
+          <label>Nom</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input type="text" name="nom" id="nom" placeholder="Konaté" required autocomplete="family-name">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Prénom</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input type="text" name="prenom" id="prenom" placeholder="Moussa" required autocomplete="given-name">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Email</label>
+          <div class="input-wrap">
+            <span class="input-icon">📧</span>
+            <input type="email" name="email" id="email" placeholder="votre@email.com" required autocomplete="email">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Téléphone</label>
+          <div class="input-wrap">
+            <span class="input-icon">📱</span>
+            <input type="tel" name="telephone" id="tel" placeholder="+226 70 00 00 00" required autocomplete="tel">
+          </div>
+        </div>
+
+        <div class="input-group full-width">
+          <label>Mot de passe</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" name="mdp" id="mdp-input" placeholder="Minimum 8 caractères" required autocomplete="new-password">
+            <button type="button" class="eye-btn" id="eyeBtn">👁</button>
+          </div>
+          <div class="strength-wrap">
+            <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+            <div class="strength-label" id="strengthLabel"></div>
+          </div>
+        </div>
+
+        <div class="terms full-width">
+          <input type="checkbox" id="terms" required>
+          <label for="terms">
+            J'accepte les <a href="#">conditions d'utilisation</a> et la
+            <a href="#">politique de confidentialité</a> de CTEXI
+          </label>
+        </div>
+
+        <button type="submit" class="btn-submit full-width" id="submitBtn">
+          <span class="spinner"></span>
+          <span class="btn-text">Créer mon compte</span>
+        </button>
+
+        <div class="divider">ou</div>
 
         <p class="switch">
-            Déjà inscrit ? <a href="{{ url_for('auth.login') }}">Se connecter</a>
+          Déjà inscrit ? <a href="{{ url_for('auth.login') }}">Se connecter</a>
         </p>
-    </div>
-</div>
 
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const eyeBtn   = document.getElementById("eyeBtn");
+    const mdpInput = document.getElementById("mdp-input");
+    const fill     = document.getElementById("strengthFill");
+    const label    = document.getElementById("strengthLabel");
+    const toast    = document.getElementById("toast");
+
+    function showToast(msg, type="success"){
+      toast.textContent = msg;
+      toast.className = "toast show "+type;
+      setTimeout(()=>toast.classList.remove("show"),3200);
+    }
+
+    eyeBtn.addEventListener("click",()=>{
+      const show = mdpInput.type==="password";
+      mdpInput.type = show?"text":"password";
+      eyeBtn.textContent = show?"🙈":"👁";
+    });
+
+    const levels=[
+      {w:"0%",bg:"transparent",txt:""},
+      {w:"25%",bg:"#FF6B6B",txt:"Très faible"},
+      {w:"50%",bg:"#F59E0B",txt:"Faible"},
+      {w:"70%",bg:"#3B82F6",txt:"Moyen"},
+      {w:"85%",bg:"#10B981",txt:"Fort"},
+      {w:"100%",bg:"#10B981",txt:"Très fort 🔒"},
+    ];
+    function getStrength(p){
+      let s=0;
+      if(p.length>=8)s++;if(p.length>=12)s++;
+      if(/[A-Z]/.test(p))s++;if(/[0-9]/.test(p))s++;if(/[^A-Za-z0-9]/.test(p))s++;
+      return s;
+    }
+    mdpInput.addEventListener("input",()=>{
+      const s=Math.min(getStrength(mdpInput.value),5);
+      fill.style.width=levels[s].w;fill.style.background=levels[s].bg;
+      label.textContent=levels[s].txt;label.style.color=levels[s].bg;
+    });
+
+    function updateSteps(){
+      let a=1;
+      if(document.getElementById("email").value||document.getElementById("tel").value)a=2;
+      if(mdpInput.value)a=3;
+      [1,2,3].forEach(i=>{
+        const s=document.getElementById("step"+i);
+        s.className="step";
+        if(i<a)s.classList.add("done");
+        if(i===a)s.classList.add("active");
+      });
+    }
+    document.querySelectorAll(".form-grid input").forEach(el=>el.addEventListener("input",updateSteps));
+
+    ["nom","prenom","email","tel"].forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el)return;
+      el.addEventListener("blur",()=>{
+        if(el.checkValidity()&&el.value)el.classList.add("valid");
+        else if(el.value)el.classList.add("invalid");
+      });
+      el.addEventListener("input",()=>el.classList.remove("valid","invalid"));
+    });
+
+    document.getElementById("reg-form").addEventListener("submit",()=>{
+      document.getElementById("submitBtn").classList.add("loading");
+    });
+  </script>
 </body>
 </html>
