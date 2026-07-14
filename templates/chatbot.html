@@ -190,7 +190,8 @@
     #close-chatbot:hover{background:rgba(255,255,255,.2);color:#fff}
 
     /* ══ QUICK BAR ══ */
-    .quick-bar{display:flex;gap:7px;background:var(--bg-surface);padding:10px 14px;border-bottom:1px solid var(--border-soft);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+    /* APRÈS */
+    .quick-bar{display:flex;gap:7px;justify-content:center;background:var(--bg-surface);padding:10px 14px;border-bottom:1px solid var(--border-soft);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
     .quick-bar::-webkit-scrollbar{display:none}
     .quick-btn{background:var(--bg-card);color:var(--accent-light);border:1px solid var(--border);padding:7px 14px;border-radius:20px;cursor:pointer;font-size:.77rem;font-family:'Nunito',sans-serif;font-weight:700;transition:all .22s ease;white-space:nowrap;flex-shrink:0}
     .quick-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px var(--accent-glow)}
@@ -284,10 +285,10 @@
   <div class="orb orb-3"></div>
 
   <header class="page-header">
-    <div class="page-logo">CTEXI<span>Bot</span></div>
+    <div class="page-logo">CTEXI-<span>Bot</span></div>
     <div class="logout-btn">
       <form method="POST" action="{{ url_for('auth.logout') }}">
-        <button type="submit">🚪 Déconnexion</button>
+        <button type="submit">Déconnexion</button>
       </form>
     </div>
   </header>
@@ -297,7 +298,7 @@
     <p class="hero-eyebrow">Cherif Trans Expert International</p>
     <h1 class="hero-title">Votre fret <span class="accent-word">simplifié</span><span class="line2">Au cœur du Sahel, au service du monde</span></h1>
     <p class="hero-sub">Posez vos questions sur le cargo, l'achat en Chine, le tracking de colis, les paiements ou les visas. Notre IA répond en temps réel.</p>
-    <div class="route-pill"><span class="route-flag">🇨🇳</span><span>Chine</span><span class="route-arrow">→</span><span>Burkina Faso</span><span class="route-flag">🇧🇫</span></div>
+    <div class="route-pill"><span class="route-flag"></span><span>Chine</span><span class="route-arrow">→</span><span>Burkina Faso</span><span class="route-flag"></span></div>
     <div class="stats-row">
       <div class="stat-item"><div class="stat-num">5<span class="stat-accent">+</span></div><div class="stat-label">Services</div></div>
       <div class="stat-div"></div>
@@ -306,8 +307,8 @@
       <div class="stat-item"><div class="stat-num">100<span class="stat-accent">%</span></div><div class="stat-label">Sécurisé</div></div>
     </div>
     <div class="cta-group">
-      <button class="btn-cta btn-cta-primary" onclick="document.body.classList.add('show-chatbot')">💬 Parler à CTEXI-Bot</button>
-      <button class="btn-cta btn-cta-ghost" onclick="document.querySelector('.quick-btn[data-action=services]').click();document.body.classList.add('show-chatbot')">📦 Voir nos services</button>
+      <button class="btn-cta btn-cta-primary" onclick="document.body.classList.add('show-chatbot')"> Parler à CTEXI-Bot</button>
+      <button class="btn-cta btn-cta-ghost" onclick="document.querySelector('.quick-btn[data-action=services]').click();document.body.classList.add('show-chatbot')">Voir nos services</button>
     </div>
   </main>
 
@@ -536,20 +537,103 @@
        FETCH DÉTAIL SERVICE
        — utilise fetchOpts → cookie + token si dispo
     ═══════════════════════════════════════════════════ */
-    async function fetchService(id) {
-      try {
-        const res  = await fetch(`/api/list/service/${id}`, {
-          credentials: "include",
-          headers: buildHeaders({ "Content-Type": undefined })  // GET, pas de body
-        });
-        const data = await res.json();
-        const msg  = createMsg("", "bot-message");
-        chatBody.appendChild(msg);
-        await typeHTML(msg.querySelector(".message-text"),
-          `<strong>${data.nom_service}</strong><br><br>${data.descriptions || ""}`);
-      } catch (e) { console.error("[fetchService]", e); }
+    // ═══════════════════════════════════════════════════
+//  RENDER MENU — transforme le JSON menu en HTML
+// ═══════════════════════════════════════════════════
+function renderMenu(menu) {
+  if (!menu) return "";
+  let html = "";
+
+  // Description étendue
+  if (menu.description) {
+    html += `<p style="margin-bottom:12px;opacity:.85">${menu.description}</p>`;
+  }
+
+  // Fonctionnalités
+  if (menu.fonctionnalites?.length) {
+    html += `<div style="margin-bottom:12px">
+      <div style="font-weight:700;color:var(--accent-light);font-size:.8rem;
+                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">
+        ✅ Fonctionnalités
+      </div>
+      <ul style="padding-left:16px;display:flex;flex-direction:column;gap:4px">
+        ${menu.fonctionnalites.map(f => `<li>${f}</li>`).join("")}
+      </ul>
+    </div>`;
+  }
+
+  // Avantages
+  if (menu.avantages?.length) {
+    html += `<div style="margin-bottom:12px">
+      <div style="font-weight:700;color:var(--accent-light);font-size:.8rem;
+                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">
+        ⭐ Avantages
+      </div>
+      <ul style="padding-left:16px;display:flex;flex-direction:column;gap:4px">
+        ${menu.avantages.map(a => `<li>${a}</li>`).join("")}
+      </ul>
+    </div>`;
+  }
+
+  // Processus
+  if (menu.processus?.length) {
+    html += `<div>
+      <div style="font-weight:700;color:var(--accent-light);font-size:.8rem;
+                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">
+        📋 Étapes
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${menu.processus.map(p => `
+          <div style="display:flex;align-items:center;gap:9px">
+            <div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;
+                        background:linear-gradient(135deg,var(--accent),#5C3FE8);
+                        color:#fff;font-size:.65rem;font-weight:700;
+                        display:flex;align-items:center;justify-content:center">
+              ${p.etape}
+            </div>
+            <span style="font-size:.86rem">${p.titre}</span>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  }
+
+  return html;
+}
+
+// ═══════════════════════════════════════════════════
+//  FETCH DÉTAIL SERVICE — affiche nom + desc + menu
+// ═══════════════════════════════════════════════════
+async function fetchService(id) {
+  try {
+    const res  = await fetch(`/api/list/service/${id}`, {
+      credentials: "include",
+      headers: buildHeaders({ "Content-Type": undefined })
+    });
+    const data = await res.json();
+
+    // Décode le menu (peut être string JSON ou objet)
+    let menu = data.menu;
+    if (typeof menu === "string") {
+      try { menu = JSON.parse(menu); } catch { menu = null; }
     }
 
+    const html = `
+      <strong style="font-size:1rem">${data.nom_service}</strong>
+      <br><br>
+      ${data.descriptions || ""}
+      <br><br>
+      ${renderMenu(menu)}
+    `;
+
+    const msg = createMsg("", "bot-message");
+    chatBody.appendChild(msg);
+    await typeHTML(msg.querySelector(".message-text"), html);
+
+  } catch (e) {
+    console.error("[fetchService]", e);
+  }
+}
+ 
     /* ═══════════════════════════════════════════════════
        RÉPONSE BOT
        ╔══════════════════════════════════════════════╗

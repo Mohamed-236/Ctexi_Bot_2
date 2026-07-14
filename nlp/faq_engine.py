@@ -1,6 +1,6 @@
 # ==========================================================
 # nlp/faq_engine.py  — Pipeline hybride Embedding + Gemini
-# v3 — Opérations fiables + contexte conversationnel Gemini
+# v4 — Corrections dashboard + opérations fiables
 #
 # FLUX PRINCIPAL :
 #  1.  Contexte opérationnel actif  → listes rapides → Gemini si ambigu
@@ -11,12 +11,20 @@
 #  6.  Score MOYEN (≥ 0.65)         → Gemini vérifie → DB ou LLM
 #  7.  Score BAS   (< 0.65)         → Gemini direct avec historique
 #
-# BUGS CORRIGÉS :
-#  [FIX 1] get_reponse_intention : le cache retournait rows (liste)
-#          au lieu de random.choice(rows)[0] (string) → AttributeError
+# CORRECTIONS v4 :
+#  [FIX 1] get_reponse_intention : cache hit retournait rows (liste)
+#          au lieu de random.choice(rows)[0] → AttributeError corrigé.
 #  [FIX 2] reformuler_avec_gemini : normalisation défensive du type
-#          de reponse_brute (list/tuple → str)
-#  [FIX 3] gemini_verifier_intent : même normalisation défensive
+#          de reponse_brute (list/tuple → str).
+#  [FIX 3] gemini_verifier_intent : même normalisation défensive.
+#  [FIX 4] DASHBOARD — sauvegarder_conversation : toutes les
+#          conversations sauvegardées avec type_intent et action_handler
+#          explicites, y compris :
+#            • annulation/confirmation de contexte → type_intent='operation'
+#            • LLM direct (étape 7) → type_intent='llm'
+#            • hors domaine → type_intent='hors_domaine'
+#          Cela permet au dashboard de distinguer correctement les
+#          3 catégories (DB / Opération / Fallback LLM).
 # ==========================================================
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -409,17 +417,6 @@ Réponds UNIQUEMENT avec le nom exact de l'intention ou "AUCUN"."""
 
 # ==========================================================
 # [FIX 1] GET REPONSE DB
-#
-# AVANT (bugué) :
-#   cache hit  → return _reponse_cache[key]   ← retournait rows (liste) ✗
-#   cache miss → return random.choice(rows)[0] ← retournait string ✓
-#
-# APRÈS (corrigé) :
-#   cache hit  → rows = cache[key]
-#                return random.choice(rows)[0]  ← toujours string ✓
-#   cache miss → rows = DB query
-#                cache[key] = rows              ← on garde les rows pour la variété
-#                return random.choice(rows)[0]  ← toujours string ✓
 # ==========================================================
 def get_reponse_intention(id_intent: int, sous_intent: str):
     cache_key = f"{id_intent}:{sous_intent}"
@@ -427,11 +424,9 @@ def get_reponse_intention(id_intent: int, sous_intent: str):
     if cache_key in _reponse_cache:
         logging.info("[CACHE] réponse DB hit")
         rows = _reponse_cache[cache_key]
-        # ── [FIX 1] on applique random.choice ici aussi ──────
         if not rows:
             return None
         return random.choice(rows)[0]
-        # ─────────────────────────────────────────────────────
 
     conn = get_conn()
     try:
@@ -443,7 +438,7 @@ def get_reponse_intention(id_intent: int, sous_intent: str):
         """, (id_intent, sous_intent))
         rows = cur.fetchall()
         cur.close()
-        _reponse_cache[cache_key] = rows  # on cache les rows (liste de tuples)
+        _reponse_cache[cache_key] = rows
     finally:
         release_conn(conn)
 
@@ -545,9 +540,12 @@ Réponds UNIQUEMENT par OUI ou NON."""
     return True
 
 def reponse_hors_domaine_llm(message: str) -> str:
-    prompt = f"""Tu es CTEXI-BOT l'assistant de Ctexi. L'utilisateur pose une question hors domaine : "{message}"
-Explique poliment que tu n'as pas été formé dans ce domaine, tu es spécialisé dans le fret maritime et aérien de CTEXI uniquement.
-Propose : Ctexi Buy, Ctexi Travel, Ctexi Pay, Ctexi Cargo, Ctexi Académie.
+    prompt = f"""Tu es CTEXI-BOT l'assistant de Ctexi. 
+    
+- L'utilisateur pose une question hors domaine : "{message}"
+- Dis lui poliment que tu es désolé mais cela ne releve pas de tes competances, tes competances se limite dans le domaine dans le domaine du fret maritime et aérien de CTEXI .
+- Propose : Ctexi Buy, Ctexi Travel, Ctexi Pay, Ctexi Cargo, Ctexi Académie.
+- Propose lui aussi de contacter nos agent pour plus d'eclaircissement
 2 phrases max, chaleureux, emojis modérés. Même langue."""
     try:
         resp = gemini_model.generate_content(prompt)
@@ -577,16 +575,13 @@ def formatter_operation_avec_llm(type_operation: str, message: str) -> str:
 
 # ==========================================================
 # [FIX 2] REFORMULATION GEMINI
-#
-# Ajout d'une normalisation défensive en tête de fonction.
-# Accepte maintenant str | list | tuple sans crasher.
 # ==========================================================
 def reformuler_avec_gemini(message_user: str, reponse_brute, history=None) -> str:
 
     # ── [FIX 2] normalisation défensive du type ───────────────
     if isinstance(reponse_brute, (list, tuple)):
         reponse_brute = reponse_brute[0] if reponse_brute else ""
-    if isinstance(reponse_brute, (list, tuple)):   # double imbrication possible
+    if isinstance(reponse_brute, (list, tuple)):
         reponse_brute = reponse_brute[0] if reponse_brute else ""
     reponse_brute = str(reponse_brute).strip() if reponse_brute is not None else ""
 
@@ -666,7 +661,10 @@ def gerer_operations_par_nom(intent_nom: str, message: str, id_user) -> dict | N
                 "type": "conversion",
                 "reponse": "<p>💱 Veuillez préciser le montant et les devises.<br>Exemple : <b>100 USD en FCFA</b></p>",
                 "trouve": False,
-                "_type_intent": "operation", "_action_handler": action_handler, "_id_intent": None,
+                # [FIX 4] type_intent et action_handler explicites pour dashboard
+                "_type_intent": "operation",
+                "_action_handler": action_handler,
+                "_id_intent": None,
             }
         clear_context(id_user)
         msg = f"💱 {result['montant']} {result['source']} = {result['resultat']:.2f} {result['cible']}"
@@ -674,7 +672,9 @@ def gerer_operations_par_nom(intent_nom: str, message: str, id_user) -> dict | N
             "type": "conversion",
             "reponse": formatter_operation_avec_llm("conversion", msg),
             "trouve": True,
-            "_type_intent": "operation", "_action_handler": action_handler, "_id_intent": None,
+            "_type_intent": "operation",
+            "_action_handler": action_handler,
+            "_id_intent": None,
         }
 
     if intent_nom == "suivi_colis":
@@ -685,7 +685,9 @@ def gerer_operations_par_nom(intent_nom: str, message: str, id_user) -> dict | N
                 "type": "tracking",
                 "reponse": "<p>📦 Veuillez envoyer votre code de suivi.<br>Exemple : <b>CTX10001</b></p>",
                 "trouve": False,
-                "_type_intent": "operation", "_action_handler": action_handler, "_id_intent": None,
+                "_type_intent": "operation",
+                "_action_handler": action_handler,
+                "_id_intent": None,
             }
         clear_context(id_user)
         result = get_colis_info(code, id_user)
@@ -694,14 +696,18 @@ def gerer_operations_par_nom(intent_nom: str, message: str, id_user) -> dict | N
                 "type": "tracking",
                 "reponse": f"<p>❌ Aucun colis trouvé pour le code <b>{code}</b>.</p>",
                 "trouve": False,
-                "_type_intent": "operation", "_action_handler": action_handler, "_id_intent": None,
+                "_type_intent": "operation",
+                "_action_handler": action_handler,
+                "_id_intent": None,
             }
         msg = f"📦 Colis {result['code']} — Statut : {result['statut']}"
         return {
             "type": "tracking",
             "reponse": formatter_operation_avec_llm("tracking", msg),
             "data": result, "trouve": True,
-            "_type_intent": "operation", "_action_handler": action_handler, "_id_intent": None,
+            "_type_intent": "operation",
+            "_action_handler": action_handler,
+            "_id_intent": None,
         }
 
     if intent_nom == "contact_agent":
@@ -710,7 +716,9 @@ def gerer_operations_par_nom(intent_nom: str, message: str, id_user) -> dict | N
             "type": "agent",
             "reponse": "<p>👨‍💼 Choisissez un moyen de contact ci-dessous :</p>",
             "agent": get_agent(), "trouve": True,
-            "_type_intent": "operation", "_action_handler": action_handler, "_id_intent": None,
+            "_type_intent": "operation",
+            "_action_handler": action_handler,
+            "_id_intent": None,
         }
 
     if intent_nom == "service_info":
@@ -719,7 +727,9 @@ def gerer_operations_par_nom(intent_nom: str, message: str, id_user) -> dict | N
             "type": "service",
             "reponse": "<p>📌 Voici les services disponibles chez CTEXI.</p>",
             "services": get_services(), "trouve": True,
-            "_type_intent": "operation", "_action_handler": action_handler, "_id_intent": None,
+            "_type_intent": "operation",
+            "_action_handler": action_handler,
+            "_id_intent": None,
         }
 
     return None
@@ -732,10 +742,11 @@ def gerer_operations(message: str, id_user) -> dict | None:
 
 def _sauvegarder_op(id_user, message_original, op: dict, confidence=None):
     sauvegarder_conversation_async(
-        id_user=id_user, message_user=message_original,
+        id_user=id_user,
+        message_user=message_original,
         reponse_bot=op.get("reponse", ""),
         id_intent=op.get("_id_intent"),
-        type_intent=op.get("_type_intent"),
+        type_intent=op.get("_type_intent"),     # toujours 'operation'
         action_handler=op.get("_action_handler"),
         confidence=confidence
     )
@@ -758,17 +769,26 @@ def trouver_meilleure_correspondance(message: str, id_user):
     # --------------------------------------------------
     ctx = get_context(id_user)
     if ctx:
+        ctx_handler = _ACTION_HANDLER_MAP.get(ctx)
+
         # a) Annulation rapide
         if msg_lower in _MOTS_ANNULATION:
             clear_context(id_user)
             reponse = "<p>D'accord, pas de problème 👍 Comment puis-je vous aider ?</p>"
+            # [FIX 4] type_intent='operation' explicite → pas compté en fallback
             sauvegarder_conversation_async(
-                id_user=id_user, message_user=message_original, reponse_bot=reponse,
-                type_intent="operation", action_handler=_ACTION_HANDLER_MAP.get(ctx)
+                id_user=id_user,
+                message_user=message_original,
+                reponse_bot=reponse,
+                type_intent="operation",
+                action_handler=ctx_handler,
             )
             logging.info(f"[SOURCE] ANNULATION rapide ctx={ctx}")
-            return {"type": "annulation", "reponse": reponse,
-                    "debug": {"source": "annulation_liste", "intent": ctx}}
+            return {
+                "type": "annulation",
+                "reponse": reponse,
+                "debug": {"source": "annulation_liste", "intent": ctx},
+            }
 
         # b) Confirmation rapide
         if msg_lower in _MOTS_CONFIRMATION:
@@ -787,12 +807,19 @@ def trouver_meilleure_correspondance(message: str, id_user):
         if decision == "ANNULE":
             clear_context(id_user)
             reponse = "<p>D'accord, pas de problème 👍 Comment puis-je vous aider ?</p>"
+            # [FIX 4] type_intent='operation' explicite
             sauvegarder_conversation_async(
-                id_user=id_user, message_user=message_original, reponse_bot=reponse,
-                type_intent="operation", action_handler=_ACTION_HANDLER_MAP.get(ctx)
+                id_user=id_user,
+                message_user=message_original,
+                reponse_bot=reponse,
+                type_intent="operation",
+                action_handler=ctx_handler,
             )
-            return {"type": "annulation", "reponse": reponse,
-                    "debug": {"source": "annulation_llm", "intent": ctx}}
+            return {
+                "type": "annulation",
+                "reponse": reponse,
+                "debug": {"source": "annulation_llm", "intent": ctx},
+            }
 
         if decision in ("CONFIRME", "DONNEE"):
             op = gerer_operations_par_nom(ctx, message, id_user)
@@ -810,13 +837,21 @@ def trouver_meilleure_correspondance(message: str, id_user):
     # --------------------------------------------------
     if not verifier_domaine_llm(message):
         reponse = reponse_hors_domaine_llm(message)
+        # [FIX 4] type_intent='hors_domaine' → pas compté en fallback LLM
         sauvegarder_conversation_async(
-            id_user=id_user, message_user=message_original,
-            reponse_bot=reponse, confidence=0.0
+            id_user=id_user,
+            message_user=message_original,
+            reponse_bot=reponse,
+            type_intent="hors_domaine",
+            action_handler=None,
+            confidence=0.0,
         )
         logging.info("[SOURCE] HORS DOMAINE")
-        return {"type": "hors_domaine", "reponse": reponse,
-                "debug": {"source": "domain_filter"}}
+        return {
+            "type": "hors_domaine",
+            "reponse": reponse,
+            "debug": {"source": "domain_filter"},
+        }
 
     # --------------------------------------------------
     # ÉTAPE 3 — OPÉRATIONS FUZZY/REGEX
@@ -853,14 +888,21 @@ def trouver_meilleure_correspondance(message: str, id_user):
         if reponse_brute:
             reponse_finale = reformuler_avec_gemini(message, reponse_brute, history)
             sauvegarder_conversation_async(
-                id_user=id_user, message_user=message_original,
-                reponse_bot=reponse_finale, id_intent=id_intent,
-                type_intent=type_intent, action_handler=action_handler,
-                confidence=float(score)
+                id_user=id_user,
+                message_user=message_original,
+                reponse_bot=reponse_finale,
+                id_intent=id_intent,
+                type_intent=type_intent,
+                action_handler=action_handler,
+                confidence=float(score),
             )
             logging.info(f"[SOURCE] DB HAUT SCORE score={score:.3f} durée={time.time()-t_start:.2f}s")
-            return {"type": "intent", "reponse": reponse_finale, "confidence": float(score),
-                    "debug": {"source": "db_haut_score", "intent": intent_nom, "score": score}}
+            return {
+                "type": "intent",
+                "reponse": reponse_finale,
+                "confidence": float(score),
+                "debug": {"source": "db_haut_score", "intent": intent_nom, "score": score},
+            }
 
     # ÉTAPE 6 — Score MOYEN → Gemini vérifie
     if score >= SEUIL_MOYEN:
@@ -869,18 +911,27 @@ def trouver_meilleure_correspondance(message: str, id_user):
             if gemini_verifier_intent(message, intent_nom, reponse_brute, top3_exemples):
                 reponse_finale = reformuler_avec_gemini(message, reponse_brute, history)
                 sauvegarder_conversation_async(
-                    id_user=id_user, message_user=message_original,
-                    reponse_bot=reponse_finale, id_intent=id_intent,
-                    type_intent=type_intent, action_handler=action_handler,
-                    confidence=float(score)
+                    id_user=id_user,
+                    message_user=message_original,
+                    reponse_bot=reponse_finale,
+                    id_intent=id_intent,
+                    type_intent=type_intent,
+                    action_handler=action_handler,
+                    confidence=float(score),
                 )
                 logging.info(f"[SOURCE] DB MOYEN SCORE vérifié score={score:.3f} durée={time.time()-t_start:.2f}s")
-                return {"type": "intent", "reponse": reponse_finale, "confidence": float(score),
-                        "debug": {"source": "db_verifie", "intent": intent_nom, "score": score}}
+                return {
+                    "type": "intent",
+                    "reponse": reponse_finale,
+                    "confidence": float(score),
+                    "debug": {"source": "db_verifie", "intent": intent_nom, "score": score},
+                }
 
             # 1er intent rejeté → candidats alternatifs
             logging.info(f"[RETRY] '{intent_nom}' rejeté → {len(top_candidats)-1} candidats alternatifs")
-            candidats_alternatifs = [c for c in top_candidats[1:] if c["score"] >= SEUIL_MOYEN - 0.10]
+            candidats_alternatifs = [
+                c for c in top_candidats[1:] if c["score"] >= SEUIL_MOYEN - 0.10
+            ]
 
             if candidats_alternatifs:
                 meilleur = gemini_choisir_meilleur_intent(message, candidats_alternatifs)
@@ -889,28 +940,49 @@ def trouver_meilleure_correspondance(message: str, id_user):
                     if reponse_alt:
                         reponse_finale = reformuler_avec_gemini(message, reponse_alt, history)
                         sauvegarder_conversation_async(
-                            id_user=id_user, message_user=message_original,
+                            id_user=id_user,
+                            message_user=message_original,
                             reponse_bot=reponse_finale,
                             id_intent=meilleur["id_intent"],
                             type_intent=meilleur["type_intent"],
                             action_handler=meilleur["action_handler"],
-                            confidence=float(meilleur["score"])
+                            confidence=float(meilleur["score"]),
                         )
-                        logging.info(f"[SOURCE] DB CANDIDAT ALTERNATIF intent={meilleur['intent_nom']} score={meilleur['score']:.3f} durée={time.time()-t_start:.2f}s")
-                        return {"type": "intent", "reponse": reponse_finale,
-                                "confidence": float(meilleur["score"]),
-                                "debug": {"source": "db_candidat_alternatif",
-                                          "intent": meilleur["intent_nom"],
-                                          "score": meilleur["score"]}}
+                        logging.info(
+                            f"[SOURCE] DB CANDIDAT ALTERNATIF intent={meilleur['intent_nom']} "
+                            f"score={meilleur['score']:.3f} durée={time.time()-t_start:.2f}s"
+                        )
+                        return {
+                            "type": "intent",
+                            "reponse": reponse_finale,
+                            "confidence": float(meilleur["score"]),
+                            "debug": {
+                                "source": "db_candidat_alternatif",
+                                "intent": meilleur["intent_nom"],
+                                "score": meilleur["score"],
+                            },
+                        }
 
             logging.info("[RETRY] aucun candidat alternatif valide → LLM direct")
 
+    # --------------------------------------------------
     # ÉTAPE 7 — Score BAS ou tous rejetés → Gemini direct
+    # [FIX 4] type_intent='llm' explicite → identifiable en dashboard
+    # --------------------------------------------------
     reponse_finale = gemini_direct_answer(message, history)
     sauvegarder_conversation_async(
-        id_user=id_user, message_user=message_original,
-        reponse_bot=reponse_finale, confidence=float(score)
+        id_user=id_user,
+        message_user=message_original,
+        reponse_bot=reponse_finale,
+        id_intent=None,
+        type_intent="llm",           # 'llm' et non NULL → lisible en dashboard
+        action_handler=None,
+        confidence=float(score),
     )
     logging.info(f"[SOURCE] LLM DIRECT score={score:.3f} durée={time.time()-t_start:.2f}s")
-    return {"type": "llm", "reponse": reponse_finale, "confidence": float(score),
-            "debug": {"source": "llm_direct", "score": score}}
+    return {
+        "type": "llm",
+        "reponse": reponse_finale,
+        "confidence": float(score),
+        "debug": {"source": "llm_direct", "score": score},
+    }

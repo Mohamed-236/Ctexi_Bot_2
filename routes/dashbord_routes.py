@@ -2,6 +2,17 @@
 #  dashboard_routes.py
 #  Blueprint Flask — Dashboard Admin Ctexi-Bot
 #  Toutes les routes utilisent get_db_connection() (psycopg2)
+#
+#  CORRECTIONS v2 :
+#  [FIX 1] fallback_rate : l'ancienne formule comptait id_intent IS NULL
+#          ce qui englobait TOUTES les opérations (taux, colis, agent…)
+#          et les réponses LLM valides → taux artificiellement élevé.
+#          Désormais on distingue 3 catégories :
+#            • db_rate      : réponse issue de la base (id_intent NOT NULL)
+#            • op_rate      : opération métier (type_intent = 'operation')
+#            • fallback_rate: LLM pur sans intent ni opération
+#  [FIX 2] faq_rate renommé db_rate pour plus de clarté sémantique.
+#  [FIX 3] Ajout de op_rate dans le payload /stats.
 # ================================================================
 
 from flask import Blueprint, render_template, jsonify, session, redirect, url_for
@@ -84,17 +95,61 @@ def stats():
     agents_total  = scalar("SELECT COUNT(*) FROM auth.agents")
     intents_count = scalar("SELECT COUNT(*) FROM chatbot.intention")
     colis_count   = scalar("SELECT COUNT(*) FROM core.colis")
-    confiance_moy = scalar("SELECT AVG(confidence) FROM chatbot.conversations WHERE confidence IS NOT NULL")
+    confiance_moy = scalar(
+        "SELECT AVG(confidence) FROM chatbot.conversations WHERE confidence IS NOT NULL"
+    )
 
-    # Taux FAQ vs Fallback
-    total_avec_intent = scalar(
+    # ----------------------------------------------------------------
+    # [FIX 1 & 2 & 3] — 3 catégories de réponses distinctes
+    #
+    # Catégorie 1 — Réponse DB (intent identifié en base)
+    #   id_intent NOT NULL  → le bot a trouvé une réponse précise en base
+    # ----------------------------------------------------------------
+    db_count = scalar(
         "SELECT COUNT(*) FROM chatbot.conversations WHERE id_intent IS NOT NULL"
     )
-    fallback_count = scalar(
-        "SELECT COUNT(*) FROM chatbot.conversations WHERE action_handler = 'fallback_handler' OR id_intent IS NULL"
+
+    # ----------------------------------------------------------------
+    # Catégorie 2 — Opération métier (taux, colis, agent, service…)
+    #   type_intent = 'operation' ET id_intent NULL
+    #   Ces conversations sont légitimes : elles ont une réponse précise
+    #   mais ne passent pas par un intent_id (handler dédié).
+    # ----------------------------------------------------------------
+    op_count = scalar(
+        """
+        SELECT COUNT(*)
+        FROM chatbot.conversations
+        WHERE type_intent = 'operation'
+          AND id_intent IS NULL
+        """
     )
-    faq_rate     = round((1 - fallback_count / total_convs) * 100, 1) if total_convs > 0 else 0
-    fallback_rate = round((fallback_count / total_convs) * 100, 1) if total_convs > 0 else 0
+
+    # ----------------------------------------------------------------
+    # Catégorie 3 — Fallback réel (LLM pur, sans intent ni opération)
+    #   id_intent NULL + pas une opération + pas de handler connu
+    #   C'est ici que l'on compte les vraies réponses Gemini "de secours"
+    # ----------------------------------------------------------------
+    fallback_count = scalar(
+        """
+        SELECT COUNT(*)
+        FROM chatbot.conversations
+        WHERE id_intent IS NULL
+          AND (type_intent IS NULL OR type_intent != 'operation')
+          AND (action_handler IS NULL OR action_handler = 'fallback_handler')
+        """
+    )
+
+    # ----------------------------------------------------------------
+    # Taux calculés sur total_convs
+    # ----------------------------------------------------------------
+    def pct(n):
+        return round((n / total_convs) * 100, 1) if total_convs > 0 else 0
+
+    db_rate       = pct(db_count)       # réponses base de données
+    op_rate       = pct(op_count)       # opérations métier
+    fallback_rate = pct(fallback_count) # LLM fallback réel
+    # Ancienne clé faq_rate conservée pour compatibilité front existant
+    faq_rate      = db_rate
 
     return jsonify({
         "total_users":    int(total_users),
@@ -104,9 +159,16 @@ def stats():
         "intents_count":  int(intents_count),
         "colis_count":    int(colis_count),
         "confiance_moy":  round(confiance_moy, 1),
-        "faq_rate":       faq_rate,
-        "fallback_rate":  fallback_rate,
-        "uptime":         99.7   # statique ou à brancher sur ton monitoring
+        # Taux corrigés
+        "faq_rate":       faq_rate,       # compat ancien front (= db_rate)
+        "db_rate":        db_rate,        # réponses DB précises
+        "op_rate":        op_rate,        # opérations métier (taux, colis…)
+        "fallback_rate":  fallback_rate,  # vrai fallback LLM
+        # Compteurs bruts utiles pour debug / graphiques
+        "db_count":       int(db_count),
+        "op_count":       int(op_count),
+        "fallback_count": int(fallback_count),
+        "uptime":         99.7            # statique ou à brancher sur ton monitoring
     })
 
 
@@ -146,6 +208,48 @@ def activity():
 
 
 # ================================================================
+#  API — ACTIVITÉ 7 JOURS AVEC DÉTAIL DES CATÉGORIES
+#  Nouveau endpoint pour graphiques de qualité par jour
+# ================================================================
+@dashboard_bp.route('/activity_quality')
+@admin_required
+def activity_quality():
+    """
+    Retourne pour chaque jour des 7 derniers jours :
+      - nb de réponses DB (intent trouvé)
+      - nb d'opérations métier
+      - nb de fallback réels
+    Utile pour un graphique stacked bar sur le dashboard.
+    """
+    rows = query("""
+        SELECT
+            TO_CHAR(created_at, 'Dy') AS jour,
+            DATE(created_at)          AS d,
+            COUNT(*) FILTER (WHERE id_intent IS NOT NULL)                                        AS db_count,
+            COUNT(*) FILTER (WHERE type_intent = 'operation' AND id_intent IS NULL)              AS op_count,
+            COUNT(*) FILTER (
+                WHERE id_intent IS NULL
+                  AND (type_intent IS NULL OR type_intent != 'operation')
+                  AND (action_handler IS NULL OR action_handler = 'fallback_handler')
+            )                                                                                     AS fallback_count
+        FROM chatbot.conversations
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+        GROUP BY DATE(created_at), TO_CHAR(created_at, 'Dy')
+        ORDER BY d
+    """)
+
+    return jsonify([
+        {
+            "jour":          r['jour'],
+            "db_count":      int(r['db_count']),
+            "op_count":      int(r['op_count']),
+            "fallback_count": int(r['fallback_count']),
+        }
+        for r in rows
+    ])
+
+
+# ================================================================
 #  API — RÉPARTITION DES INTENTIONS (donut)
 # ================================================================
 @dashboard_bp.route('/intent_dist')
@@ -178,6 +282,18 @@ def conversations():
             c.type_intent,
             c.action_handler,
             c.confidence,
+            -- Catégorie de réponse lisible pour le dashboard
+            CASE
+                WHEN c.id_intent IS NOT NULL
+                    THEN 'DB'
+                WHEN c.type_intent = 'operation' AND c.id_intent IS NULL
+                    THEN 'Opération'
+                WHEN c.id_intent IS NULL
+                 AND (c.type_intent IS NULL OR c.type_intent != 'operation')
+                 AND (c.action_handler IS NULL OR c.action_handler = 'fallback_handler')
+                    THEN 'Fallback LLM'
+                ELSE 'LLM enrichi'
+            END                              AS categorie_reponse,
             TO_CHAR(c.created_at, 'DD/MM HH24:MI') AS created_at
         FROM chatbot.conversations c
         JOIN  auth.users           u ON c.id_user  = u.id_user
