@@ -1,18 +1,5 @@
-# Environnement virtuel
-ctexi_env/
-
-# Variables sensibles
 .env
-
-# Python
+ctexi_env/
+structure_project
 __pycache__/
-*.pyc
-
-# Fichiers locaux sensibles
 mot de passe postgresql.txt
-
-# Configuration IDE
-.vscode/
-
-# Logs
-*.log
