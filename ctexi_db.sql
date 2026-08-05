@@ -484,19 +484,10 @@ DROP TABLE chatbot.intent_responses CASCADE;
 
 TRUNCATE TABLE chatbot.intent_examples RESTART IDENTITY;
 
-
 SELECT * FROM chatbot.intent_responses;
 
 
-
 SELECT * FROM chatbot.intention;
-
-
-
-
-
-
-
 
 
 SELECT * FROM chatbot.intention;
@@ -511,7 +502,6 @@ DROP TABLE chatbot.faq CASCADE;
 
 
 SELECT * FROM chatbot.faq;
-
 
 
 
@@ -606,7 +596,7 @@ INSERT INTO chatbot.intent_examples (id_intent, sous_intent, phrase, mots_cles) 
 (9, 'presentation', 'Tell me about CTEXI', ARRAY['tell','about','ctexi']),
 (9, 'presentation', 'What is CTEXI ?', ARRAY['what','is','ctexi']),
 (9, 'presentation', 'CTEXI est une entreprise de quoi ?', ARRAY['ctexi','entreprise']),
- (9, 'localisation', 'Où êtes-vous situés ?', ARRAY['où','situé']),
+(9, 'localisation', 'Où êtes-vous situés ?', ARRAY['où','situé']),
 (9, 'localisation', 'Vous êtes basés où ?', ARRAY['basé','où']),
 (9, 'localisation', 'Quelle est votre adresse ?', ARRAY['adresse']),
 (9, 'localisation', 'Vous opérez dans quels pays ?', ARRAY['pays','opérez']),
@@ -720,6 +710,7 @@ INSERT INTO chatbot.intent_examples (id_intent, sous_intent, phrase, mots_cles) 
 (8, 'conversion', 'How much is 100 USD in FCFA ?', ARRAY['usd','fcfa']),
 (8, 'conversion', 'Taux de change RMB', ARRAY['taux','rmb']),
 (8, 'conversion', 'Combien fait 200 dollars en FCFA ?', ARRAY['dollars','fcfa']);
+
 
 -- -----------------------------------------------------------
 -- FAQ CARGO (4)
